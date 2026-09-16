@@ -82,7 +82,7 @@ The queue is single-threaded. One file is processed completely before the next s
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/screenshots.webp" alt="screenshot" >
+  <img src="assets/screenshots/screenshots.webp" alt="screenshot" >
 </p>
 
 ---
