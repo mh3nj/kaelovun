@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/icons/icon-dark.png">
-    <img src="assets/icons/icon-white.png" alt="Kaelovun" width="220">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/banner.webp">
+    <img src="docs/banner.webp" alt="Kaelovun" width="220">
   </picture>
 </p>
 
