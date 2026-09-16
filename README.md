@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/banner.webp">
-    <img src="docs/banner.webp" alt="Kaelovun" width="220">
+    <img src="docs/banner.webp" alt="Kaelovun">
   </picture>
 </p>
 
@@ -82,7 +82,7 @@ The queue is single-threaded. One file is processed completely before the next s
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/screenshots.webp" alt="screenshot" width="720">
+  <img src="docs/screenshots/screenshots.webp" alt="screenshot" >
 </p>
 
 ---
