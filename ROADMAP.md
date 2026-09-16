@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned features and development priorities for Asset Organizer.
+Planned features and development priorities for Kaelovun.
 
 ---
 

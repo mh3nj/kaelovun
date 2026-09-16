@@ -133,7 +133,7 @@ class MCPClient:
                 init = self._post_session("initialize", {
                     "protocolVersion": PROTOCOL_VERSION,
                     "capabilities": {},
-                    "clientInfo": {"name": "AssetOrganizer", "version": "1.3.1"},
+                    "clientInfo": {"name": "Kaelovun", "version": "1.3.1"},
                 })
                 try:
                     self._post_json(endpoint, {

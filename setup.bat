@@ -1,11 +1,11 @@
 @echo off
-title Asset Organizer — Setup and Launcher
+title Kaelovun — Setup and Launcher
 color 07
 setlocal enabledelayedexpansion
 set STARTDIR=%CD%
 
 echo ========================================
-echo    Asset Organizer — Setup and Launch
+echo    Kaelovun — Setup and Launch
 echo ========================================
 echo.
 
@@ -78,13 +78,13 @@ echo [OK] All dependencies installed.
 REM ── Launch ──────────────────────────────────────────
 echo.
 echo ========================================
-echo    Starting Asset Organizer
+echo    Starting Kaelovun
 echo ========================================
 echo.
 python main.py
 
 echo.
-echo Asset Organizer has exited.
+echo Kaelovun has exited.
 echo Run this file again to launch the app.
 pause >nul
 

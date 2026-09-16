@@ -20,7 +20,7 @@ Open an issue and include:
 - Your Windows version and Adobe version (Photoshop, Illustrator, or both)
 - What you expected to happen
 - What actually happened
-- Any log output from `data/organizer.log` or the UI log area
+- Any log output from `data/kaelovun.log` or the UI log area
 
 ### Suggesting features
 
@@ -50,8 +50,8 @@ Open an issue describing the problem you want to solve. Focus on the use case ra
 ### Setup
 
 ```bash
-git clone https://github.com/YOUR_USER/AssetOrganizer.git
-cd AssetOrganizer
+git clone https://github.com/mh3nj/kaelovun.git
+cd kaelovun
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
@@ -155,6 +155,6 @@ If you change user-facing behavior, update these files:
 ## Release process
 
 1. Update the version number in `CHANGELOG.md` and `config.py` if applicable.
-2. Run `python -m PyInstaller AssetOrganizer.spec --noconfirm`.
-3. Test the built executable from `dist/AssetOrganizer/`.
+2. Run `python -m PyInstaller Kaelovun.spec --noconfirm`.
+3. Test the built executable from `dist/Kaelovun/`.
 4. Create a GitHub release with the executable attached and a summary of changes.

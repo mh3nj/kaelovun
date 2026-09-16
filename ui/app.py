@@ -66,13 +66,31 @@ class ApplicationUI:
         self._name_saved_typing = ""
 
         self.root = tk.Tk()
-        self.root.title("Asset Organizer")
-        self.root.geometry("700x780+100+50")
+        self.root.title("Kaelovun")
+        self.root.geometry("700x810+100+50")
+
+        self._logo_images = {}
+        self._current_logo_image = None
+        self._load_logos()
+        self._apply_window_icon()
 
         self.create_widgets()
         self.apply_theme()
 
     def create_widgets(self):
+        # ── Branding: theme-aware logo + title ──
+        self.brand_bar = tk.Frame(self.root)
+        self.brand_bar.pack(fill="x", padx=10, pady=(10, 0))
+
+        self.brand_logo = tk.Label(self.brand_bar, text="")
+        self.brand_logo.pack(side="left", padx=(0, 8))
+
+        self.brand_title = tk.Label(
+            self.brand_bar, text="Kaelovun", font=("Arial", 14, "bold"), anchor="w"
+        )
+        self.brand_title.pack(side="left", fill="x", expand=True)
+        self._refresh_brand_logo()
+
         # ── Top: folder + theme toggle ──
         top = tk.Frame(self.root)
         top.pack(fill="x", padx=10, pady=(10, 0))
@@ -188,6 +206,77 @@ class ApplicationUI:
                 for grandchild in child.winfo_children():
                     if isinstance(grandchild, tk.Label):
                         grandchild.configure(bg=t["frame_bg"], fg=t["fg"])
+        self._refresh_brand_logo()
+
+    # ──────────────────────────────────────────────
+    # Branding (theme-aware logo)
+    # ──────────────────────────────────────────────
+
+    def _icon_candidates(self, filename: str):
+        """Possible on-disk locations for a branding asset."""
+        import sys
+        base = Path(__file__).resolve().parent.parent
+        candidates = [
+            base / "assets" / "icons" / filename,
+            base / filename,
+        ]
+        if getattr(sys, "frozen", False):
+            exe_dir = Path(sys.executable).parent
+            candidates.append(exe_dir / "_internal" / "assets" / "icons" / filename)
+            candidates.append(exe_dir / "assets" / "icons" / filename)
+        return candidates
+
+    def _find_icon(self, filename: str):
+        for candidate in self._icon_candidates(filename):
+            try:
+                if candidate.is_file():
+                    return candidate
+            except Exception:
+                continue
+        return None
+
+    def _load_logos(self):
+        """Load white/dark logos once; missing files simply disable branding."""
+        for theme, filename in (("light", "icon-white.png"), ("dark", "icon-dark.png")):
+            try:
+                path = self._find_icon(filename)
+                if not path:
+                    continue
+                img = Image.open(path)
+                img.thumbnail((40, 40))
+                self._logo_images[theme] = ImageTk.PhotoImage(img)
+            except Exception:
+                continue
+
+    def _apply_window_icon(self):
+        try:
+            path = self._find_icon("icon-dark.png") or self._find_icon("icon-white.png")
+            if not path:
+                return
+            img = Image.open(path)
+            img.thumbnail((64, 64))
+            icon = ImageTk.PhotoImage(img)
+            # Keep a reference for the lifetime of the window.
+            self._window_icon = icon
+            self.root.iconphoto(True, icon)
+        except Exception:
+            pass
+
+    def _refresh_brand_logo(self):
+        """Swap the header logo to match the active theme."""
+        try:
+            # Dark UI pairs with the dark-background mark, light UI with white.
+            logo = self._logo_images.get(self._theme)
+            if logo is None:
+                # Fall back to whichever mark loaded.
+                logo = next(iter(self._logo_images.values()), None)
+            if logo is None:
+                return
+            self._current_logo_image = logo
+            if hasattr(self, "brand_logo"):
+                self.brand_logo.config(image=logo, text="")
+        except Exception:
+            pass
 
     # ──────────────────────────────────────────────
     # Name history (arrow keys)

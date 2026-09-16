@@ -1,7 +1,7 @@
 /*
 affinity_pipeline.js
 
-Asset Organizer automation for the new unified Affinity (Canva-era).
+Kaelovun automation for the new unified Affinity (Canva-era).
 
 Runs inside Affinity via its MCP execute_script tool. Only documented
 SDK patterns are used: require('/application'), app.documents.current,

@@ -1,6 +1,6 @@
-# Asset Organizer — audit & fixes, batch 5
+# Kaelovun (formerly Asset Organizer) — audit & fixes, batch 5
 
-Drop these 9 files into Asset Organizer's root, same names.
+Drop these 9 files into Kaelovun's root, same names.
 
 Same approach as Evoury: read the actual code end to end before touching
 anything, rather than guessing at what "needs recoding." Found six real

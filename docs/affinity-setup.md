@@ -16,12 +16,12 @@ steps below apply to the unified app only.
 1. Open Affinity.
 2. Go to **Settings → MCP Server** and turn it **on**.
 3. Enable the **FileSystem** permission (scripts need it).
-4. Keep Affinity open, or let Asset Organizer launch it — either works.
+4. Keep Affinity open, or let Kaelovun launch it — either works.
    Your own open Affinity is never quit by the app.
 
 ## 2. Switch the engine
 
-1. Launch Asset Organizer.
+1. Launch Kaelovun.
 2. Click **⚙ Settings → Engine → Affinity**.
 3. Click **Test Affinity connection** — you want `reachable ✓`.
 4. Click **Save**. The status bar now reads `Ready (Affinity)`.
@@ -56,7 +56,7 @@ Connection details that cost us a debugging session, so you never repeat it:
 
 ## Known limitations
 
-- **Tabs accumulate (your instance).** Nothing can close documents in 3.2.1. If Asset Organizer launched Affinity itself, it recycles the app every `AFFINITY_RESTART_EVERY` files (default 10) to clear them — verified: relaunch comes back clean, no recovery prompts. If you opened Affinity yourself, it never quits it for you: split big batches and close tabs by hand. The queue-end log tells you how many tabs were left behind.
+- **Tabs accumulate (your instance).** Nothing can close documents in 3.2.1. If Kaelovun launched Affinity itself, it recycles the app every `AFFINITY_RESTART_EVERY` files (default 10) to clear them — verified: relaunch comes back clean, no recovery prompts. If you opened Affinity yourself, it never quits it for you: split big batches and close tabs by hand. The queue-end log tells you how many tabs were left behind.
 - **Archives hold the original bytes.** Hide happens in memory but PSDs can't save back, so the RAR contains the file as it was (layers visible). For `.afphoto`/`.afdesign` saves may succeed — watch the log.
 - **Renders are max 1024px.** Affinity caps `render_spread`. Fine for naming/AVIFs, not a full-res export.
 - **Adobe file fidelity.** Affinity opens PSD/AI but may rasterize or
@@ -81,7 +81,7 @@ scripts to your build's exact API:
 3. Update the strategy lists in `scripts/affinity_pipeline.js`
    (`aoSave`, `aoClose`, `aoHideVisibleLayers`).
 4. Rebuild the exe (scripts ship inside it — always build from
-   `AssetOrganizer.spec`).
+   `Kaelovun.spec`).
 
 ## Troubleshooting
 

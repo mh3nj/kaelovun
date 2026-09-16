@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ─────────────────────────────────────────────────────
-# Asset Organizer — Setup and Launch
+# Kaelovun — Setup and Launch
 # ─────────────────────────────────────────────────────
 
 RED='\033[0;31m'
@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo "========================================"
-echo "   Asset Organizer — Setup and Launch"
+echo "   Kaelovun — Setup and Launch"
 echo "========================================"
 echo ""
 
@@ -64,11 +64,11 @@ echo -e "${GREEN}[OK]${NC} All dependencies installed."
 # ── Launch ────────────────────────────────────────────
 echo ""
 echo "========================================"
-echo "   Starting Asset Organizer"
+echo "   Starting Kaelovun"
 echo "========================================"
 echo ""
 $PYTHON main.py
 
 echo ""
-echo "Asset Organizer has exited."
+echo "Kaelovun has exited."
 echo "Run this script again to launch the app."

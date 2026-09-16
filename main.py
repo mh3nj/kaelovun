@@ -41,7 +41,7 @@ def main():
 
     config = Config()
     logger = Logger(config)
-    logger.info("Asset Organizer started.")
+    logger.info("Kaelovun started.")
 
     check_environment(config, logger)
 

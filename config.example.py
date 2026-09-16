@@ -27,7 +27,7 @@ class Config:
         self.DATA_DIR.mkdir(exist_ok=True)
 
         self.SESSION_FILE = self.DATA_DIR / "session.json"
-        self.LOG_FILE = self.DATA_DIR / "organizer.log"
+        self.LOG_FILE = self.DATA_DIR / "kaelovun.log"
         self.SETTINGS_FILE = self.DATA_DIR / "settings.json"
 
         # ── Processing engine ────────────────────

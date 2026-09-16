@@ -7,14 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## 1.3.1 — 2026-09-15
+## 1.3.1 — 2026-09-15 (rebranded as Kaelovun — 2026-09-16)
+
+### Changed
+
+- **Rebrand: Asset Organizer → Kaelovun.** Application title, window, logging (`Kaelovun`), settings, setup scripts, and documentation now use Kaelovun throughout. Previous name retained below in history for reference. No pipeline behavior changes.
+- **Theme-aware branding.** New `assets/icons/icon-white.png` (light) and `assets/icons/icon-dark.png` (dark) logos; the in-app header and window icon swap automatically with the dark/light theme. Renamed log file to `data/kaelovun.log` and build to `Kaelovun.exe` via `Kaelovun.spec`.
+- **Repository.** Moved to `https://github.com/mh3nj/kaelovun` with updated README badges, install paths (`Kaelovun-v1.3.1.zip` → `Kaelovun/Kaelovun.exe`), and release assets.
 
 ### Fixed
 
 - **Photoshop locked-visible layers.** `hideVisibleLayers` now unlocks every lock kind (`allLocked`/`locked`/pixels/position/transparent) before hiding, per-layer isolated, children before groups — one stubborn layer can no longer abort the loop and leave the file big. (`scripts/photoshop_export.jsx`)
 - **Illustrator locked layers.** Same unlock-first hardening for layers/sublayers plus `pageItems[].locked`, then hide. (`scripts/illustrator_export.jsx`)
 - **Affinity locked layers.** `aoHideVisibleLayers` now runs select-all → unlock-all/unlock-selection → hide-selection in 3 passes (layers freed in pass N hide in pass N+1) and clears the selection after. (`scripts/affinity_pipeline.js`)
-- **Affinity startup popups.** Asset Organizer now auto-dismisses the in-app updater (answers Later/No/Skip/Close) and the template/welcome/new-document opener (Close/Cancel/Escape) on Affinity start and before each open — Affinity-owned windows only, best-effort, never fails the job. (`affinity/popups.py`, `affinity.py`)
+- **Affinity startup popups.** Kaelovun now auto-dismisses the in-app updater (answers Later/No/Skip/Close) and the template/welcome/new-document opener (Close/Cancel/Escape) on Affinity start and before each open — Affinity-owned windows only, best-effort, never fails the job. (`affinity/popups.py`, `affinity.py`)
 
 ---
 

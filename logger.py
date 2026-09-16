@@ -24,7 +24,7 @@ class Logger:
             except Exception:
                 pass
 
-        self.logger = logging.getLogger("AssetOrganizer")
+        self.logger = logging.getLogger("Kaelovun")
         self.logger.setLevel(logging.INFO)
         formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 

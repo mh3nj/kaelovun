@@ -1,5 +1,12 @@
 <p align="center">
-  <img src="docs/banner.webp" alt="Asset Organizer" width="720">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/icons/icon-dark.png">
+    <img src="assets/icons/icon-white.png" alt="Kaelovun" width="220">
+  </picture>
+</p>
+
+<p align="center">
+  <strong>Kaelovun</strong>
 </p>
 
 <p align="center">
@@ -13,19 +20,21 @@
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Photoshop-blueviolet?logo=adobephotoshop&logoColor=white" alt="Photoshop"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Illustrator-orange?logo=adobeillustrator&logoColor=white" alt="Illustrator"></a>
   <a href="docs/affinity-setup.md"><img src="https://img.shields.io/badge/Affinity-supported-68d9f0" alt="Affinity"></a>
-  <a href="https://github.com/mh3nj/assetOrganizer/releases"><img src="https://img.shields.io/badge/release-v1.3.1-brightgreen" alt="Release 1.3.1"></a>
+  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.3.1-brightgreen" alt="Release 1.3.1"></a>
   <a href="https://github.com/mh3nj/evoury"><img src="https://img.shields.io/badge/Evoury-DAM-ff69b4" alt="Evoury DAM"></a>
 </p>
 
 ---
 
-Asset Organizer processes PSD, AI, and EPS files one at a time. For each file it exports a preview, asks for a descriptive name, creates an AVIF thumbnail, and packages everything into a verified RAR archive.
+> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1 with a new name, theme-aware logos, and updated build/release assets. No pipeline behavior changed — existing workflows, archives, and Evoury integration continue as before.
+
+Kaelovun processes PSD, AI, and EPS files one at a time. For each file it exports a preview, asks for a descriptive name, creates an AVIF thumbnail, and packages everything into a verified RAR archive.
 
 Files open in **Adobe** (Photoshop/Illustrator via COM) by default, or in the new unified **Affinity** via its local MCP scripting server — switch anytime in **⚙ Settings → Engine**. Affinity mode additionally handles native `.afphoto`, `.afdesign`, and `.afpub` files. See [docs/affinity-setup.md](docs/affinity-setup.md).
 
 The goal is simple: replace generic filenames like `Logo_Final.ai` with searchable names like `green white black letter logo minimal corporate shadow.ai`. Once files are named this way, any filesystem search tool (Windows Search, Everything, grep) finds them immediately — no database, no tags, no proprietary catalog.
 
-Asset Organizer is the ingestion pipeline for [Evoury](https://github.com/mh3nj/evoury), a full-featured digital asset management platform. Evoury provides the catalog and grid interface; Asset Organizer prepares the assets for it.
+Kaelovun is the ingestion pipeline for [Evoury](https://github.com/mh3nj/evoury), a full-featured digital asset management platform. Evoury provides the catalog and grid interface; Kaelovun prepares the assets for it.
 
 ---
 
@@ -114,7 +123,7 @@ pip install -r requirements.txt
 
 ## Installation
 
-Asset Organizer runs on Windows only (it depends on Adobe COM interop). The setup scripts and manual steps below all assume a Windows environment.
+Kaelovun runs on Windows only (it depends on Adobe COM interop). The setup scripts and manual steps below all assume a Windows environment.
 
 ### First run: configuration
 
@@ -130,7 +139,7 @@ You usually don't need to edit anything afterwards: Adobe and WinRAR paths are *
 
 ### Prebuilt executable (recommended)
 
-Download the latest `AssetOrganizer-vX.Y.Z.zip` from the [Releases page](https://github.com/mh3nj/assetOrganizer/releases). Extract the archive and run `AssetOrganizer/AssetOrganizer.exe`. No Python or dependencies required — everything is bundled.
+Download the latest `Kaelovun-vX.Y.Z.zip` from the [Releases page](https://github.com/mh3nj/kaelovun/releases). Extract the archive and run `Kaelovun/Kaelovun.exe`. No Python or dependencies required — everything is bundled.
 
 ### Run from source with setup script
 
@@ -153,8 +162,8 @@ Each script checks for Python 3.11+, creates a `.venv` if one does not exist, in
 
 ```bash
 # Clone the repository
-git clone https://github.com/mh3nj/assetOrganizer.git
-cd assetOrganizer
+git clone https://github.com/mh3nj/kaelovun.git
+cd kaelovun
 
 # Create and activate a virtual environment
 python -m venv .venv
@@ -174,10 +183,10 @@ python main.py
 
 ```bash
 pip install pyinstaller
-python -m PyInstaller AssetOrganizer.spec --noconfirm
+python -m PyInstaller Kaelovun.spec --noconfirm
 ```
 
-The executable will be at `dist/AssetOrganizer/AssetOrganizer.exe`. It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files.
+The executable will be at `dist/Kaelovun/Kaelovun.exe`. It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files.
 
 > **Always build from the `.spec` file.** Running `pyinstaller main.py` regenerates the spec with no data files and silently drops the `scripts/` folder, which makes every job fail with "Missing JSX".
 
@@ -212,7 +221,7 @@ The executable will be at `dist/AssetOrganizer/AssetOrganizer.exe`. It includes 
 1. Wait for the naming prompt.
 2. Switch to Adobe Photoshop or Illustrator.
 3. Make your edits.
-4. Switch back to Asset Organizer.
+4. Switch back to Kaelovun.
 5. Click **Regen Preview**.
 6. The preview updates. Type the name and continue.
 
@@ -220,7 +229,7 @@ The pipeline stays at the naming step the entire time. Nothing breaks.
 
 ### Resuming after a crash
 
-1. Launch Asset Organizer.
+1. Launch Kaelovun.
 2. Click **Resume Failed**.
 3. Incomplete jobs from the last session are restored.
 4. Click **Start Queue** to process them.
@@ -279,20 +288,20 @@ Affinity PSD/AI/EPS rows behave like Adobe except: previews cap at 1024px, hide 
 
 [Evoury](https://github.com/mh3nj/evoury) is a full-featured digital asset management (DAM) platform. It provides an asset grid, catalog browsing, and search across your organized library.
 
-Asset Organizer is the ingestion pipeline for Evoury. Together they form a complete workflow:
+Kaelovun is the ingestion pipeline for Evoury. Together they form a complete workflow:
 
 ```
 Source files (PSD/AI/EPS)
        │
        ▼
-Asset Organizer ────→ Organized archives (RAR + AVIF)
+Kaelovun ────→ Organized archives (RAR + AVIF)
 (ingestion pipeline)        │
                             ▼
                        Evoury DAM
                    (catalog and management)
 ```
 
-You can use Asset Organizer without Evoury. It produces standard files that work with any file manager or search tool.
+You can use Kaelovun without Evoury. It produces standard files that work with any file manager or search tool.
 
 ---
 
@@ -373,13 +382,13 @@ Communication uses `threading.Event`. The UI sets the event when a name is submi
 ## FAQ
 
 **Can I use this without Evoury?**  
-Yes. Asset Organizer produces organized RAR and AVIF files that work with any file manager or search tool.
+Yes. Kaelovun produces organized RAR and AVIF files that work with any file manager or search tool.
 
 **Does it modify the original files?**  
 The source file is renamed and archived into a RAR. After the archive is verified, the loose original is deleted. Keep backups of anything irreplaceable.
 
 **Can I rename assets after they are archived?**  
-Not through Asset Organizer. You would need to extract the RAR, rename manually, and re-archive.
+Not through Kaelovun. You would need to extract the RAR, rename manually, and re-archive.
 
 **Why does EPS sometimes show a save dialog?**  
 Illustrator may prompt for EPS export options. See [Known Limitations](issues.md#eps-save-dialog-illustrator) for the workaround.
@@ -402,5 +411,5 @@ MIT. See [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  <sub>Built as organizer for <a href="https://github.com/mh3nj/evoury">Evoury</a></sub>
+  <sub>Kaelovun — ingestion pipeline for <a href="https://github.com/mh3nj/evoury">Evoury</a></sub>
 </p>

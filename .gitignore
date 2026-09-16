@@ -42,3 +42,5 @@ config.py
 
 # ── PyInstaller artifacts ───────────────────────────────
 *.exe
+# Track the branded spec; ignore any other generated specs.
+!Kaelovun.spec
