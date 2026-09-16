@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/banner.webp">
-    <img src="docs/banner.webp" alt="Kaelovun">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/banner.webp">
+    <img src="assets/banner.webp" alt="Kaelovun">
   </picture>
 </p>
 
