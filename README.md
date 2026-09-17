@@ -17,6 +17,7 @@
   <a href="#"><img src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white" alt="Python 3.11+"></a>
   <a href="#"><img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License"></a>
   <a href="#"><img src="https://img.shields.io/badge/platform-Windows-blue?logo=windows&logoColor=white" alt="Windows"></a>
+  <a href="#"><img src="https://custom-icon-badges.demolab.com/badge/Affinity-A7F175?logo=affinitystudio&logoColor=black" alt="Affinity"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Photoshop-blueviolet?logo=adobephotoshop&logoColor=white" alt="Photoshop"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Illustrator-orange?logo=adobeillustrator&logoColor=white" alt="Illustrator"></a>
   <a href="docs/affinity-setup.md"><img src="https://img.shields.io/badge/Affinity-supported-68d9f0" alt="Affinity"></a>
