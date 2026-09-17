@@ -30,7 +30,7 @@
 
 Kaelovun processes PSD, AI, and EPS files one at a time. For each file it exports a preview, asks for a descriptive name, creates an AVIF thumbnail, and packages everything into a verified RAR archive.
 
-Files open in **Adobe** (Photoshop/Illustrator via COM) by default, or in the new unified **Affinity** via its local MCP scripting server;switch anytime in **⚙ Settings → Engine**. Affinity mode additionally handles native `.afphoto`, `.afdesign`, and `.afpub` files. See [docs/affinity-setup.md](docs/affinity-setup.md).
+Files open in **Adobe** (Photoshop/Illustrator via COM) by default, or in the new unified **Affinity** via its local MCP scripting server;switch anytime in ** Settings → Engine**. Affinity mode additionally handles native `.afphoto`, `.afdesign`, and `.afpub` files. See [docs/affinity-setup.md](docs/affinity-setup.md).
 
 The goal is simple: replace generic filenames like `Logo_Final.ai` with searchable names like `green white black letter logo minimal corporate shadow.ai`. Once files are named this way, any filesystem search tool (Windows Search, Everything, grep) finds them immediately;no database, no tags, no proprietary catalog.
 
@@ -219,7 +219,7 @@ The runnable app will be at `dist/Kaelovun/Kaelovun.exe` (with `dist/Kaelovun/_i
 | **Regen Preview** | Re-export the preview from the currently open document (during naming only) |
 | **Confirm** | Accept the typed name and continue |
 | **Theme** | Toggle dark and light themes |
-| **⚙ Settings** | Engine, app paths, formats, preview, pipeline, theme |
+| ** Settings** | Engine, app paths, formats, preview, pipeline, theme |
 
 ### Regenerating a preview
 
@@ -245,7 +245,7 @@ Only jobs that never reached "done" are recovered. Jobs whose source file was al
 
 ## Configuration
 
-Prefer the in-app route: **⚙ Settings** writes to `data/settings.json` (gitignored, machine-local) and applies instantly;no restart, no rebuild. `copy config.example.py config.py` is still the one-time first step (the app only reads `config.py`), but you rarely need to open it: Adobe, Affinity, and WinRAR paths auto-detect from `C:\Program Files`.
+Prefer the in-app route: ** Settings** writes to `data/settings.json` (gitignored, machine-local) and applies instantly;no restart, no rebuild. `copy config.example.py config.py` is still the one-time first step (the app only reads `config.py`), but you rarely need to open it: Adobe, Affinity, and WinRAR paths auto-detect from `C:\Program Files`.
 
 `config.py` ships the defaults; `data/settings.json` holds your overrides. Delete `settings.json` (or Settings → Reset defaults) to go back to stock.
 
