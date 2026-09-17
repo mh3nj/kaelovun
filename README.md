@@ -139,7 +139,9 @@ You usually don't need to edit anything afterwards: Adobe and WinRAR paths are *
 
 ### Prebuilt executable (recommended)
 
-Download the latest `Kaelovun-vX.Y.Z.zip` from the [Releases page](https://github.com/mh3nj/kaelovun/releases). Extract the archive and run `Kaelovun/Kaelovun.exe`. No Python or dependencies required — everything is bundled.
+Download the latest `Kaelovun-vX.Y.Z.zip` from the [Releases page](https://github.com/mh3nj/kaelovun/releases). Extract the **entire** archive and run `Kaelovun/Kaelovun.exe`. No Python or dependencies required — everything is bundled.
+
+> **Extract everything, keep the folder together.** The exe needs its `_internal/` folder next to it (it holds `python3xx.dll` and the `scripts/` automation). If you move `Kaelovun.exe` out alone, or run it straight from inside the zip without extracting, Windows shows `Failed to load Python DLL ... _internal/python3xx.dll`. Fix: extract the full zip, then run `Kaelovun/Kaelovun.exe` from the extracted folder.
 
 ### Run from source with setup script
 
@@ -186,9 +188,11 @@ pip install pyinstaller
 python -m PyInstaller Kaelovun.spec --noconfirm
 ```
 
-The executable will be at `dist/Kaelovun/Kaelovun.exe`. It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files.
+The runnable app will be at `dist/Kaelovun/Kaelovun.exe` (with `dist/Kaelovun/_internal/` next to it). It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files. Or run `scripts/build_release.bat` — it builds from the spec, verifies `_internal/python3*.dll` exists, and zips `dist/Kaelovun` to `Kaelovun-vX.Y.Z.zip` for you.
 
 > **Always build from the `.spec` file.** Running `pyinstaller main.py` regenerates the spec with no data files and silently drops the `scripts/` folder, which makes every job fail with "Missing JSX".
+
+> **Never run `build/Kaelovun/Kaelovun.exe`.** The `build/` folder only holds intermediate files — that exe always fails with `Failed to load Python DLL ... build/Kaelovun/_internal/python3xx.dll` because there is no `_internal/` there. Always run `dist/Kaelovun/Kaelovun.exe`.
 
 ---
 
@@ -395,6 +399,9 @@ Illustrator may prompt for EPS export options. See [Known Limitations](issues.md
 
 **Can I process 1000 files at once?**  
 One at a time, sequentially. The queue is single-threaded by design because Adobe COM is single-threaded.
+
+**"Failed to load Python DLL ... _internal/python3xx.dll"?**  
+You launched the exe without its folder. This happens when you (a) run `build/Kaelovun/Kaelovun.exe` instead of `dist/Kaelovun/Kaelovun.exe`, (b) move `Kaelovun.exe` out of its folder away from `_internal/`, or (c) run it from inside the zip without extracting. Extract the full release zip and run `Kaelovun/Kaelovun.exe` from the extracted folder — never move the exe alone.
 
 ---
 
