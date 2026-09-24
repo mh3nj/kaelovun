@@ -106,6 +106,7 @@ class Config:
         self.ADOBE_RECOVERY_WAIT = 20
         self.DOCUMENT_TIMEOUT = 60
         self.MAX_RETRIES = 2
+        self.MAX_ARCHIVE_DEPTH = 2
 
         self.ARCHIVE_PROFILE = {
             "method": "best",
@@ -137,7 +138,7 @@ class Config:
                     "ADOBE_STARTUP_WAIT", "ADOBE_RECOVERY_WAIT",
                     "AFFINITY_MCP_PORT", "AFFINITY_STARTUP_WAIT",
                     "AFFINITY_RECOVERY_WAIT", "AFFINITY_RESTART_EVERY",
-                    "DOCUMENT_TIMEOUT", "MAX_RETRIES"}
+                    "DOCUMENT_TIMEOUT", "MAX_RETRIES", "MAX_ARCHIVE_DEPTH"}
         for key, value in overrides.items():
             if key in path_keys and isinstance(value, str) and value:
                 setattr(self, key, Path(value))

@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 
 from pipeline.job import Job
+from files.archive_extraction import ArchiveClassifier
 
 
 class AssetScanner:
@@ -15,6 +16,7 @@ class AssetScanner:
     def __init__(self, config, logger):
         self.config = config
         self.logger = logger
+        self.classifier = ArchiveClassifier(config, logger)
 
     def scan_folder(self, folder: Path) -> list:
         folder = Path(folder)
@@ -36,6 +38,37 @@ class AssetScanner:
                 jobs.append(job)
         self.logger.info(f"Found {len(jobs)} scannable files ({sorted(wanted)}).")
         return jobs
+
+    def scan_input(self, path: Path) -> list:
+        """
+        Universal input scanner.
+        Handles: individual files, directories, and archives.
+        """
+        path = Path(path)
+        self.logger.info(f"Scanning input: {path}")
+
+        classification = self.classifier.classify(path)
+
+        if classification['type'] == 'file':
+            if path.suffix.lower() in self.config.scannable_extensions():
+                return [Job(path)]
+            else:
+                self.logger.info(f"File {path.name} is not a scannable format, will be preserved")
+                return []
+
+        elif classification['type'] == 'directory':
+            return self.scan_folder(path)
+
+        elif classification['type'] == 'archive':
+            self.logger.info(f"Input is an archive: {path.name}")
+            # Archive will be extracted during processing, not during scanning
+            # Return a special job that marks this as an archive to process
+            job = Job(path)
+            job.is_archive = True
+            job.archive_metadata = classification
+            return [job]
+
+        return []
 
     def find_existing_preview(self, source: Path):
         extensions = [".png", ".jpg", ".jpeg", ".webp"]

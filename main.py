@@ -16,6 +16,7 @@ from files.archive import RarArchive
 
 from adobe.photoshop import PhotoshopController
 from adobe.illustrator import IllustratorController
+from adobe.indesign import InDesignController
 from affinity.affinity import AffinityController
 
 from pipeline.processor import AssetProcessor
@@ -51,11 +52,13 @@ def main():
 
     photoshop = PhotoshopController(config, logger)
     illustrator = IllustratorController(config, logger)
+    indesign = InDesignController(config, logger)
     affinity = AffinityController(config, logger)
 
     processor = AssetProcessor(
         config, logger, preview, archive,
         photoshop, illustrator, storage,
+        indesign=indesign,
         affinity=affinity,
     )
 

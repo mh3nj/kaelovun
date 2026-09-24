@@ -1,3 +1,4 @@
 pywin32
 Pillow>=10.0.0
 pillow-avif-plugin
+patoolib

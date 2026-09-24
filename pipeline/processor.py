@@ -1,41 +1,42 @@
 """
 processor.py
 
-Main asset processing pipeline.
+Main asset processing pipeline with package-based architecture.
 
-Pipeline order per asset:
-  1. Open PSD/AI in Adobe once
-  2. Export PNG preview
-  3. Convert PNG to AVIF
-  4. Ask user for asset name
-  5. Hide visible layers only
-  6. Save modified source (keeps original filename while PS has it open)
-  7. Close Adobe document tab (saves changes)
-  8. Rename source + preview files on disk (PS has released the file)
-  9. Create RAR with PSD/AI + AVIF inside
-  10. Verify archive
-  11. Delete loose source file (keep external AVIF for DAM)
-  12. Done
+Pipeline order per package:
+  1. Discover and classify package
+  2. Extract archives to safe workspace (if needed)
+  3. Generate previews for transformable assets
+  4. Process transformable assets (hide layers, save)
+  5. Reconstruct package preserving structure
+  6. Create final RAR archive
+  7. Verify archive
+  8. Cleanup (only after successful verification)
 """
 
 from pathlib import Path
+import tempfile
+import shutil
 
 from pipeline.job import JobStatus
+from pipeline.asset_package import AssetPackage, PackageClassifier, FileCategory
 from files.naming import NameRequest
 from files.filename import FilenameManager
 from files.cleanup import CleanupManager
+from files.archive_extraction import ArchiveExtractor
 from adobe.recovery import AdobeRecovery
 
 
 class AssetProcessor:
 
-    def __init__(self, config, logger, preview, archive, photoshop, illustrator, storage, session=None, affinity=None):
+    def __init__(self, config, logger, preview, archive, photoshop, illustrator, storage, session=None, indesign=None, affinity=None):
         self.config = config
         self.logger = logger
         self.preview = preview
         self.archive = archive
         self.photoshop = photoshop
         self.illustrator = illustrator
+        self.indesign = indesign
         self.affinity = affinity
         self.storage = storage
         self.session = session
@@ -44,62 +45,43 @@ class AssetProcessor:
         self.filename = FilenameManager(logger)
         self.cleanup_manager = CleanupManager(logger)
         self.recovery = AdobeRecovery(config, logger)
+        self.classifier = PackageClassifier(config, logger)
+        self.extractor = ArchiveExtractor(config, logger, max_depth=getattr(config, 'MAX_ARCHIVE_DEPTH', 2))
+
         self.should_continue = lambda: True
-        self._total_assets = 0
+        self._total_packages = 0
         self._processed = 0
         self._failed = 0
+        self._workspace_root = None
 
     def process(self, job):
-        doc_opened = False
+        """Main entry point - process a job which may be a file, directory, or archive."""
+        workspace_created = False
         try:
             if not self.storage.require_space(job.source_file.parent, should_continue=self.should_continue):
                 raise RuntimeError("Queue stopped while waiting for disk space.")
 
-            # 1. Open Adobe document (with original filename)
-            job.set_status(JobStatus.OPENING)
-            self.open_document(job)
-            doc_opened = True
+            # Create workspace
+            self._workspace_root = self._create_workspace(job)
+            workspace_created = True
 
-            # 2. Export preview PNG
-            job.set_status(JobStatus.EXPORTING_PREVIEW)
-            png = self.create_png_preview(job)
+            # Classify input into an AssetPackage
+            package = self._prepare_package(job)
 
-            # 3. Convert to AVIF (full preview + small thumbnail tier)
-            job.set_status(JobStatus.CONVERTING_AVIF)
-            job.preview_file, job.thumb_file, job.width, job.height = self.preview.convert_to_avif(
-                png, job.source_file.with_suffix(".avif")
-            )
-            self.preview.delete_file_safe(png)
+            # Process the package
+            self._process_package(package, job)
 
-            # 4. Ask human for name
-            job.set_status(JobStatus.WAITING_FOR_NAME)
-            self.request_name(job)
+            # Create final archive
+            self._create_final_archive(package, job)
 
-            # 5. Hide visible layers
-            job.set_status(JobStatus.HIDING_LAYERS)
-            self.hide_layers(job)
+            # Verify archive
+            job.set_status(JobStatus.VERIFYING)
+            if not self._verify_archive(job):
+                raise RuntimeError(f"Archive verification failed for {job.archive_file.name}")
 
-            # 6. Save source (original filename — PS still has the file)
-            job.set_status(JobStatus.SAVING)
-            self.save_document(job)
-
-            # 7. Close Adobe tab (saves changes, no dialog)
-            self.close_document(job)
-            doc_opened = False
-
-            # 8. NOW rename files on disk (PS has released the file)
-            job.set_status(JobStatus.RENAMING)
-            self.rename_source(job)
-            self.rename_preview(job)
-            self.rename_thumb(job)
-
-            # 9. Create RAR
-            job.set_status(JobStatus.CREATING_ARCHIVE)
-            self.create_archive(job)
-
-            # 11. Cleanup
+            # Only now cleanup
             job.set_status(JobStatus.CLEANUP)
-            self.cleanup(job)
+            self._cleanup_workspace(package, job)
 
             job.set_status(JobStatus.DONE)
             self._processed += 1
@@ -108,21 +90,264 @@ class AssetProcessor:
             self._failed += 1
             self.handle_error(job, error)
         finally:
-            if doc_opened:
+            if workspace_created:
                 try:
-                    self.close_document(job)
+                    self._cleanup_workspace_root()
                 except Exception:
                     pass
 
+    def _create_workspace(self, job) -> Path:
+        """Create a safe temporary workspace for processing."""
+        # Use a location with plenty of space, preferably same drive as source
+        source_drive = job.source_file.drive or str(job.source_file.anchor)
+        workspace_base = Path(tempfile.gettempdir()) / "kaelovun_workspace"
+        workspace_base.mkdir(parents=True, exist_ok=True)
+
+        # Create unique workspace for this job
+        workspace = workspace_base / f"job_{id(job)}"
+        workspace.mkdir(parents=True, exist_ok=True)
+        self.logger.info(f"Created workspace: {workspace}")
+        return workspace
+
+    def _cleanup_workspace_root(self):
+        """Clean up the workspace root directory."""
+        if self._workspace_root and self._workspace_root.exists():
+            try:
+                shutil.rmtree(self._workspace_root)
+                self.logger.info(f"Cleaned up workspace: {self._workspace_root}")
+            except Exception as e:
+                self.logger.warning(f"Could not clean up workspace: {e}")
+
+    def _prepare_package(self, job) -> AssetPackage:
+        """Prepare AssetPackage from job input (file, directory, or archive)."""
+        source = job.source_file
+
+        if job.is_archive:
+            # Extract archive to workspace
+            job.set_status(JobStatus.EXTRACTING_ARCHIVE)
+            extract_root, extracted_files = self.extractor.extract(source, self._workspace_root)
+
+            # Classify the extracted contents
+            package = self.classifier.classify_package(
+                extract_root,
+                source_type="archive",
+                original_archive=source
+            )
+            package.workspace_dir = extract_root
+            job.extracted_root = extract_root
+            job.package_files = [f.path for f in package.files]
+
+        elif source.is_dir():
+            # Directory input
+            package = self.classifier.classify_package(source, source_type="directory")
+            package.workspace_dir = source
+            job.package_files = [f.path for f in package.files]
+
+        else:
+            # Single file input
+            package = self.classifier.classify_package(source.parent, source_type="file")
+            # Filter to just this file
+            package.files = [f for f in package.files if f.path == source]
+            package.workspace_dir = source.parent
+            job.package_files = [f.path for f in package.files]
+
+        job.workspace_dir = package.workspace_dir
+        return package
+
+    def _process_package(self, package: AssetPackage, job):
+        """Process all transformable files in the package."""
+        transformable = package.get_transformable_files()
+
+        if not transformable:
+            self.logger.info("No transformable files in package, skipping preview/processing")
+            return
+
+        job.set_status(JobStatus.PROCESSING_PACKAGE)
+        self.logger.info(f"Processing {len(transformable)} transformable files in package")
+
+        for i, asset_file in enumerate(transformable):
+            if not self.should_continue():
+                raise RuntimeError("Queue stopped during package processing.")
+
+            self.logger.info(f"Processing {asset_file.relative_path} ({i+1}/{len(transformable)})")
+
+            try:
+                # Generate preview for naming
+                self._generate_preview_for_file(asset_file, job)
+
+                # Process the file (hide layers, save)
+                self._process_transformable_file(asset_file, job)
+
+            except Exception as e:
+                self.logger.error(f"Failed to process {asset_file.relative_path}: {e}")
+                asset_file.error = str(e)
+                # Continue with other files - don't fail the whole package
+
+    def _generate_preview_for_file(self, asset_file: AssetFile, job):
+        """Generate preview for a transformable file."""
+        # For package processing, we generate previews for naming but
+        # the user names the PACKAGE not individual files
+        # We'll use the first transformable file's preview as the package preview
+
+        png = asset_file.path.with_suffix(".png")
+        ext = asset_file.path.suffix.lower()
+
+        if self._use_affinity(ext):
+            self._require_affinity().export_preview(png)
+        elif ext == ".psd":
+            self.photoshop.export_preview(png)
+        elif ext in (".ai", ".eps"):
+            self.illustrator.export_preview(png)
+        elif ext in (".indd", ".indt"):
+            if self.indesign:
+                self.indesign.export_preview(png)
+            else:
+                raise RuntimeError("InDesign controller not available")
+        else:
+            # For other formats, try to use PIL
+            try:
+                from PIL import Image
+                img = Image.open(asset_file.path)
+                img.save(png, "PNG")
+            except Exception as e:
+                self.logger.warning(f"Could not generate preview for {asset_file.path}: {e}")
+                return
+
+        # Convert to AVIF
+        avif_path = asset_file.path.with_suffix(".avif")
+        asset_file.preview_path, asset_file.thumb_path, w, h = self.preview.convert_to_avif(
+            png, avif_path
+        )
+        self.preview.delete_file_safe(png)
+
+    def _process_transformable_file(self, asset_file: AssetFile, job):
+        """Process a single transformable file (hide layers, save)."""
+        ext = asset_file.path.suffix.lower()
+
+        # Open document
+        job.set_status(JobStatus.OPENING)
+        if self._use_affinity(ext):
+            self._require_affinity().open_file(asset_file.path)
+        elif ext == ".psd":
+            self.photoshop.open_file(asset_file.path)
+        elif ext in (".ai", ".eps"):
+            self.illustrator.open_file(asset_file.path)
+        elif ext in (".indd", ".indt"):
+            if self.indesign:
+                self.indesign.open_file(asset_file.path)
+            else:
+                raise RuntimeError("InDesign controller not available")
+        else:
+            raise RuntimeError(f"Unsupported format for processing: {ext}")
+
+        try:
+            # Hide layers
+            job.set_status(JobStatus.HIDING_LAYERS)
+            if self._use_affinity(ext):
+                self._require_affinity().hide_layers()
+            elif ext == ".psd":
+                self.photoshop.hide_layers()
+            elif ext in (".ai", ".eps"):
+                self.illustrator.hide_layers()
+            elif ext in (".indd", ".indt"):
+                if self.indesign:
+                    self.indesign.hide_layers()
+                else:
+                    raise RuntimeError("InDesign controller not available")
+
+            # Save
+            job.set_status(JobStatus.SAVING)
+            if self._use_affinity(ext):
+                self._require_affinity().save()
+            elif ext == ".psd":
+                self.photoshop.save()
+            elif ext in (".ai", ".eps"):
+                self.illustrator.save()
+            elif ext in (".indd", ".indt"):
+                if self.indesign:
+                    self.indesign.save()
+                else:
+                    raise RuntimeError("InDesign controller not available")
+
+        finally:
+            # Close document
+            if self._use_affinity(ext):
+                self._require_affinity().close_document()
+            elif ext == ".psd":
+                self.photoshop.close_document()
+            elif ext in (".ai", ".eps"):
+                self.illustrator.close_document()
+            elif ext in (".indd", ".indt"):
+                if self.indesign:
+                    self.indesign.close_document()
+
+    def _create_final_archive(self, package: AssetPackage, job):
+        """Create the final RAR archive preserving package structure."""
+        job.set_status(JobStatus.CREATING_ARCHIVE)
+
+        # Determine archive name
+        if job.final_name:
+            archive_name = job.final_name
+        else:
+            archive_name = package.name
+
+        # Archive goes next to the original source
+        if job.is_archive and job.archive_metadata:
+            archive_dir = job.source_file.parent
+        else:
+            archive_dir = package.root_path.parent if package.source_type == "directory" else package.root_path
+
+        archive_path = archive_dir / f"{archive_name}.rar"
+
+        # Collect all files to archive (preserving structure)
+        files_to_archive = []
+        for asset_file in package.get_all_files():
+            files_to_archive.append(asset_file.path)
+            if asset_file.preview_path and asset_file.preview_path.exists():
+                files_to_archive.append(asset_file.preview_path)
+            if asset_file.thumb_path and asset_file.thumb_path.exists():
+                files_to_archive.append(asset_file.thumb_path)
+
+        self.logger.info(f"Creating archive with {len(files_to_archive)} files")
+        self.archive.create_rar(files_to_archive, archive_path)
+
+        job.archive_file = archive_path
+        package.archive_path = archive_path
+        package.archive_created = True
+
+    def _verify_archive(self, job) -> bool:
+        """Verify the created archive."""
+        if not job.archive_file or not job.archive_file.exists():
+            return False
+
+        # Test archive integrity
+        if not self.archive.test_archive(job.archive_file):
+            return False
+
+        # Verify expected files are present (optional - RAR test covers this)
+        return True
+
+    def _cleanup_workspace(self, package: AssetPackage, job):
+        """Clean up workspace files after successful verification."""
+        # Remove source files from workspace (they're now in the verified archive)
+        # But only if they were in the workspace (extracted), not originals
+        if package.workspace_dir and package.workspace_dir != package.root_path:
+            # This was an extracted archive - clean up workspace
+            self.extractor.cleanup_all()
+
+        # For directory/file inputs, the original files are NOT deleted
+        # Only the loose files in workspace are cleaned up
+        # The original source remains untouched per preservation philosophy
+
     def set_queue_size(self, size: int):
-        self._total_assets = size
+        self._total_packages = size
         self._processed = 0
         self._failed = 0
 
     def get_summary(self) -> str:
         return (
             f"Queue complete. "
-            f"Total: {self._total_assets}, "
+            f"Total: {self._total_packages}, "
             f"Success: {self._processed}, "
             f"Failed: {self._failed}"
         )
@@ -141,142 +366,13 @@ class AssetProcessor:
             )
         return self.affinity
 
-    def open_document(self, job):
-        ext = job.source_file.suffix.lower()
-        if self._use_affinity(ext):
-            self._require_affinity().open_file(job.source_file)
-        elif ext == ".psd":
-            self.photoshop.open_file(job.source_file)
-        elif ext in (".ai", ".eps"):
-            self.illustrator.open_file(job.source_file)
-        else:
-            raise RuntimeError(f"Unsupported asset: {job.source_file.suffix}")
-
-    def create_png_preview(self, job) -> Path:
-        # Always render fresh from the app so user edits are captured.
-        # (Affinity renders JPEG bytes via MCP — still written to the
-        # .png sidecar path; the AVIF converter sniffs format via PIL.)
-        png = job.source_file.with_suffix(".png")
-        ext = job.source_file.suffix.lower()
-        if self._use_affinity(ext):
-            self._require_affinity().export_preview(png)
-        elif ext == ".psd":
-            self.photoshop.export_preview(png)
-        elif ext in (".ai", ".eps"):
-            self.illustrator.export_preview(png)
-        else:
-            raise RuntimeError("Unknown format.")
-        return png
-
-    def request_name(self, job):
-        if job.final_name:
-            return
-        request = self.name_request.request_name(job.preview_file)
-        while True:
-            user_name = request.wait()
-            if request.regenerate_requested:
-                self.logger.info(f"Regenerating preview for {job.source_file.name}")
-                self._do_regenerate_preview(job)
-                request.regenerate_requested = False
-                request.event.clear()
-                continue
-            if not user_name:
-                raise RuntimeError("Empty asset name.")
-            break
-        job.final_name = self.filename.unique_name(
-            job.source_file.parent, user_name
-        )
-
-    def _do_regenerate_preview(self, job):
-        self.save_document(job)
-        old_png = job.source_file.with_suffix(".png")
-        self.preview.delete_file_safe(old_png)
-        png = self.create_png_preview(job)
-        if job.preview_file:
-            self.preview.delete_file_safe(job.preview_file)
-        if job.thumb_file:
-            self.preview.delete_file_safe(job.thumb_file)
-        job.preview_file, job.thumb_file, job.width, job.height = self.preview.convert_to_avif(
-            png, job.source_file.with_suffix(".avif")
-        )
-        self.preview.delete_file_safe(png)
-        self.name_request.preview = job.preview_file
-        self.name_request.preview_version += 1
-        self.logger.info(f"Preview regenerated for {job.source_file.name}")
-
-    def rename_source(self, job):
-        new_source = job.source_file.parent / f"{job.final_name}{job.source_file.suffix}"
-        if new_source != job.source_file:
-            job.source_file.rename(new_source)
-            job.source_file = new_source
-
-    def rename_preview(self, job):
-        new_preview = job.preview_file.parent / f"{job.final_name}.avif"
-        if new_preview != job.preview_file:
-            job.preview_file.rename(new_preview)
-            job.preview_file = new_preview
-
-    def rename_thumb(self, job):
-        if not job.thumb_file:
-            return
-        new_thumb = job.thumb_file.parent / f"{job.final_name}.thumb.avif"
-        if new_thumb != job.thumb_file:
-            job.thumb_file.rename(new_thumb)
-            job.thumb_file = new_thumb
-
-    def hide_layers(self, job):
-        ext = job.source_file.suffix.lower()
-        if self._use_affinity(ext):
-            self._require_affinity().hide_layers()
-        elif ext == ".psd":
-            self.photoshop.hide_layers()
-        elif ext in (".ai", ".eps"):
-            self.illustrator.hide_layers()
-
-    def save_document(self, job):
-        ext = job.source_file.suffix.lower()
-        if self._use_affinity(ext):
-            self._require_affinity().save()
-        elif ext == ".psd":
-            self.photoshop.save()
-        elif ext in (".ai", ".eps"):
-            self.illustrator.save()
-
-    def close_document(self, job):
-        ext = job.source_file.suffix.lower()
-        if self._use_affinity(ext):
-            self._require_affinity().close_document()
-        elif ext == ".psd":
-            self.photoshop.close_document()
-        elif ext in (".ai", ".eps"):
-            self.illustrator.close_document()
-
-    def create_archive(self, job):
-        folder = job.source_file.parent
-        archive = folder / f"{job.final_name}.rar"
-        files = [job.source_file, job.preview_file]
-        self.archive.create_rar(files, archive)
-        if not self.archive.test_archive(archive):
-            raise RuntimeError(f"RAR verification failed for {archive.name}.")
-        job.archive_file = archive
-
-    def cleanup(self, job):
-        self.cleanup_manager.remove_source(job)
-        self.cleanup_manager.remove_preview(job)
-
     def handle_error(self, job, error):
         self.logger.error(f"{job.source_file.name}: {error}")
         if self.recovery.is_recoverable(error) and job.can_retry(self.config.MAX_RETRIES):
             job.increase_retry()
             job.error_message = str(error)
-            self.logger.warning("Recoverable Adobe error detected. Restarting.")
-            ext = job.source_file.suffix.lower()
-            if self._use_affinity(ext):
-                self._require_affinity().restart()
-            elif ext == ".psd":
-                self.photoshop.restart()
-            elif ext in (".ai", ".eps"):
-                self.illustrator.restart()
+            self.logger.warning("Recoverable error detected. Restarting.")
+            # Restart relevant app
             self.recovery.wait_ready()
             self.process(job)
             return

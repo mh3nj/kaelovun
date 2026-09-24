@@ -98,6 +98,9 @@ class ApplicationUI:
         self.folder_button = tk.Button(top, text="Select Folder", command=self.select_folder, width=14)
         self.folder_button.pack(side="left", padx=(0, 5))
 
+        self.file_button = tk.Button(top, text="Select File", command=self.select_file, width=12)
+        self.file_button.pack(side="left", padx=(0, 5))
+
         self.resume_failed_button = tk.Button(top, text="Resume Failed", command=self.resume_failed, width=13)
         self.resume_failed_button.pack(side="left", padx=(0, 5))
 
@@ -317,9 +320,30 @@ class ApplicationUI:
         self.logger.info(f"Folder selected: {path}")
         self.status_label.config(text=f"Scanning: {path.name}...")
         self.root.update()
-        jobs = self.scanner.scan_folder(path)
+        jobs = self.scanner.scan_input(path)
         self.queue.add_jobs(jobs)
-        self.status_label.config(text=f"{len(jobs)} assets queued from {path.name}")
+        self.status_label.config(text=f"{len(jobs)} package(s) queued from {path.name}")
+
+    def select_file(self):
+        """Select a single file or archive for processing."""
+        file_path = filedialog.askopenfilename(
+            filetypes=[
+                ("All supported", "*.psd *.ai *.eps *.indd *.afphoto *.afdesign *.afpub *.zip *.rar *.7z *.tar *.tar.gz *.tgz"),
+                ("Adobe files", "*.psd *.ai *.eps *.indd"),
+                ("Affinity files", "*.afphoto *.afdesign *.afpub"),
+                ("Archives", "*.zip *.rar *.7z *.tar *.tar.gz *.tgz"),
+                ("All files", "*.*")
+            ]
+        )
+        if not file_path:
+            return
+        path = Path(file_path)
+        self.logger.info(f"File selected: {path}")
+        self.status_label.config(text=f"Scanning: {path.name}...")
+        self.root.update()
+        jobs = self.scanner.scan_input(path)
+        self.queue.add_jobs(jobs)
+        self.status_label.config(text=f"{len(jobs)} package(s) queued from {path.name}")
 
     def resume_failed(self):
         if not self.session:
