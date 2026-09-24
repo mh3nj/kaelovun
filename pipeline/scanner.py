@@ -35,6 +35,9 @@ class AssetScanner:
                 existing = self.find_existing_preview(item)
                 if existing:
                     job.existing_preview = existing
+                if self.classifier.extractor.is_archive(item):
+                    job.is_archive = True
+                    job.archive_metadata = self.classifier.classify(item)
                 jobs.append(job)
         self.logger.info(f"Found {len(jobs)} scannable files ({sorted(wanted)}).")
         return jobs

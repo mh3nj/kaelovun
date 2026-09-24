@@ -288,6 +288,8 @@ class AssetProcessor:
         # Determine archive name
         if job.final_name:
             archive_name = job.final_name
+        elif job.is_archive:
+            archive_name = job.source_file.stem
         else:
             archive_name = package.name
 
@@ -329,10 +331,9 @@ class AssetProcessor:
 
     def _cleanup_workspace(self, package: AssetPackage, job):
         """Clean up workspace files after successful verification."""
-        # Remove source files from workspace (they're now in the verified archive)
-        # But only if they were in the workspace (extracted), not originals
-        if package.workspace_dir and package.workspace_dir != package.root_path:
-            # This was an extracted archive - clean up workspace
+        if job.is_archive:
+            self.extractor.cleanup_all()
+        elif package.workspace_dir and package.workspace_dir != package.root_path:
             self.extractor.cleanup_all()
 
         # For directory/file inputs, the original files are NOT deleted
@@ -353,10 +354,13 @@ class AssetProcessor:
         )
 
     def _use_affinity(self, ext: str) -> bool:
-        """Native Affinity files always use Affinity; PSD/AI/EPS follow ENGINE."""
+        """Native Affinity files always use Affinity; PSD uses only Photoshop.
+        AI/EPS follow ENGINE since both Affinity and Illustrator support them."""
         if ext in (".afphoto", ".afdesign", ".afpub"):
             return True
-        return getattr(self.config, "ENGINE", "adobe") == "affinity"
+        if ext == ".psd":
+            return False
+        return ext in (".ai", ".eps") and getattr(self.config, "ENGINE", "adobe") == "affinity"
 
     def _require_affinity(self):
         if not self.affinity:
