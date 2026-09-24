@@ -31,9 +31,9 @@ class ArchiveExtractor:
         self._extracted_paths: List[Path] = []
 
     def is_archive(self, path: Path) -> bool:
-        """Check if file is a supported archive format."""
-        suffixes = ''.join(path.suffixes).lower()
-        return suffixes in self.SUPPORTED_FORMATS or path.suffix.lower() in self.SUPPORTED_FORMATS
+        """Check if file is a supported archive format by checking if name ends with known extension."""
+        name_lower = path.name.lower()
+        return any(name_lower.endswith(ext) for ext in self.SUPPORTED_FORMATS)
 
     def extract(
         self,
@@ -99,11 +99,11 @@ class ArchiveExtractor:
 
     def _extract_archive(self, archive_path: Path, dest_dir: Path) -> List[Path]:
         """Extract a single archive using appropriate method."""
-        suffixes = ''.join(archive_path.suffixes).lower()
+        name_lower = archive_path.name.lower()
 
-        if suffixes == '.tar.gz' or suffixes == '.tgz' or suffixes == '.tar.bz2' or suffixes == '.tbz2' or suffixes == '.tar.xz' or suffixes == '.txz' or suffixes == '.tar':
+        if any(name_lower.endswith(ext) for ext in ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz', '.txz')):
             return self._extract_tar(archive_path, dest_dir)
-        elif suffixes == '.zip':
+        elif name_lower.endswith('.zip'):
             return self._extract_zip(archive_path, dest_dir)
         else:
             # RAR, 7z, etc. - use patoolib
@@ -228,11 +228,11 @@ class ArchiveInspector:
 
     def list_contents(self, archive_path: Path) -> List[dict]:
         """List archive contents with metadata."""
-        suffixes = ''.join(archive_path.suffixes).lower()
+        name_lower = archive_path.name.lower()
 
-        if suffixes in ('.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz', '.txz', '.tar'):
+        if any(name_lower.endswith(ext) for ext in ('.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz', '.txz')):
             return self._list_tar(archive_path)
-        elif suffixes == '.zip':
+        elif name_lower.endswith('.zip'):
             return self._list_zip(archive_path)
         else:
             return self._list_patool(archive_path)
@@ -253,10 +253,11 @@ class ArchiveInspector:
         contents = []
         with zipfile.ZipFile(archive_path, 'r') as zf:
             for info in zf.infolist():
+                name = info.filename
                 contents.append({
-                    'name': info.filename,
+                    'name': name,
                     'size': info.file_size,
-                    'type': 'dir' if info.filename.endswith('/') else 'file',
+                    'type': 'dir' if name.endswith('/') else 'file',
                     'compressed_size': info.compress_size
                 })
         return contents
