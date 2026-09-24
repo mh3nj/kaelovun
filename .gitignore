@@ -36,6 +36,10 @@ data/
 *.log
 *.zip
 
+# ── Temporary workspaces ────────────────────────────────
+tmp/
+temp/
+
 # ── Local-only configuration (contains machine-specific paths).
 #    Push config.example.py instead.
 config.py
