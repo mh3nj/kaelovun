@@ -13,6 +13,9 @@ a = Analysis(
         ('assets/icons', 'assets/icons'),
     ],
     hiddenimports=[
+        'encodings',
+        'codecs',
+        'charset_normalizer',
         'PIL',
         'PIL._tkinter_finder',
         'pillow_avif',
