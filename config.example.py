@@ -173,6 +173,12 @@ class Config:
             for ext in self.SUPPORTED_AFFINITY_EXTENSIONS:
                 if ext not in exts:
                     exts.append(ext)
+        # Also scan archive files so they get extracted and processed
+        archive_exts = ['.zip', '.rar', '.7z', '.tar', '.tar.gz', '.tgz',
+                         '.tar.bz2', '.tbz2', '.tar.xz', '.txz']
+        for ext in archive_exts:
+            if ext not in exts:
+                exts.append(ext)
         return exts
 
     @staticmethod
