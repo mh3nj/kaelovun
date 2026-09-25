@@ -46,6 +46,12 @@ _TEMPLATE_KEYWORDS = (
     "new from template",
 )
 
+_PDF_OPTIONS_KEYWORDS = (
+    "pdf options",
+    "import pdf",
+    "open pdf",
+)
+
 # Button labels we are willing to press, in preference order.
 _UPDATER_BUTTONS = (
     "later",
@@ -62,6 +68,14 @@ _UPDATER_BUTTONS = (
 _TEMPLATE_BUTTONS = (
     "close",
     "cancel",
+    "ok",
+)
+
+# PDF options: in automation mode, we want "Load all pages" then "OK"
+_PDF_OPTIONS_BUTTONS = (
+    "load all pages",
+    "load pages",
+    "all pages",
     "ok",
 )
 
@@ -108,6 +122,9 @@ def _classify(title: str):
     for keyword in _TEMPLATE_KEYWORDS:
         if keyword in lowered:
             return "template"
+    for keyword in _PDF_OPTIONS_KEYWORDS:
+        if keyword in lowered:
+            return "pdf_options"
     return None
 
 
@@ -155,9 +172,17 @@ def _close_window(hwnd) -> None:
         pass
 
 
-def _dismiss_once(kind: str, hwnd, logger=None) -> bool:
+def _dismiss_once(kind: str, hwnd, logger=None, automation_mode=False) -> bool:
     """Try buttons first, fall back to Escape then WM_CLOSE."""
-    wanted = _UPDATER_BUTTONS if kind == "updater" else _TEMPLATE_BUTTONS
+    if kind == "updater":
+        wanted = _UPDATER_BUTTONS
+    elif kind == "template":
+        wanted = _TEMPLATE_BUTTONS
+    elif kind == "pdf_options":
+        wanted = _PDF_OPTIONS_BUTTONS if automation_mode else ()
+    else:
+        wanted = ()
+
     buttons = _child_buttons(hwnd)
     lowered = [(h, (t or "").strip().lower().replace("&", "")) for h, t in buttons]
 
@@ -167,6 +192,11 @@ def _dismiss_once(kind: str, hwnd, logger=None) -> bool:
                 if _click_button(child):
                     _log(logger, f"Dismissed {kind} popup via '{text}' button.")
                     return True
+
+    # For PDF options in automation mode, if no button found, don't force close
+    # (the user might need to interact). For others, fall back.
+    if kind == "pdf_options" and automation_mode:
+        return False
 
     # No friendly button: Escape first (template dialogs honour it),
     # then a hard close. The updater treats close as "later".
@@ -183,7 +213,7 @@ def _dismiss_once(kind: str, hwnd, logger=None) -> bool:
     return True
 
 
-def dismiss_affinity_popups_once(logger=None) -> int:
+def dismiss_affinity_popups_once(logger=None, automation_mode=False) -> int:
     """Single sweep over Affinity-owned popups. Returns dismissals."""
     if not _HAS_WIN32:
         return 0
@@ -208,20 +238,20 @@ def dismiss_affinity_popups_once(logger=None) -> int:
     dismissed = 0
     for kind, hwnd, title in targets:
         try:
-            if _dismiss_once(kind, hwnd, logger=logger):
+            if _dismiss_once(kind, hwnd, logger=logger, automation_mode=automation_mode):
                 dismissed += 1
         except Exception:
             continue
     return dismissed
 
 
-def dismiss_affinity_popups(logger=None, timeout=8, poll=0.5) -> int:
+def dismiss_affinity_popups(logger=None, timeout=8, poll=0.5, automation_mode=False) -> int:
     """Sweep for up to `timeout` seconds (popups appear async)."""
     if not _HAS_WIN32:
         return 0
     deadline = time.time() + max(0, timeout)
     total = 0
     while time.time() < deadline:
-        total += dismiss_affinity_popups_once(logger=logger)
+        total += dismiss_affinity_popups_once(logger=logger, automation_mode=automation_mode)
         time.sleep(poll)
     return total

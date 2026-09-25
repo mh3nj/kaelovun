@@ -19,10 +19,10 @@ from files.app_settings import AppSettings
 INT_FIELDS = (
     ("PREVIEW_WIDTH", "Preview max width (px)", "Preview"),
     ("PREVIEW_HEIGHT", "Preview max height (px)", "Preview"),
-    ("AVIF_QUALITY", "AVIF quality (0-100)", "Preview"),
-    ("AVIF_SPEED", "AVIF speed (0=best, 10=fastest)", "Preview"),
     ("THUMB_WIDTH", "Thumbnail width (px)", "Preview"),
     ("THUMB_HEIGHT", "Thumbnail height (px)", "Preview"),
+    ("AVIF_QUALITY", "AVIF quality (0-100)", "Preview"),
+    ("AVIF_SPEED", "AVIF speed (0=best, 10=fastest)", "Preview"),
     ("THUMB_QUALITY", "Thumbnail quality (0-100)", "Preview"),
     ("ADOBE_STARTUP_WAIT", "Adobe launch wait (s)", "Pipeline"),
     ("ADOBE_RECOVERY_WAIT", "Adobe recovery wait (s)", "Pipeline"),
@@ -43,6 +43,9 @@ PATH_FIELDS = (
 
 FORMAT_FIELDS = (".psd", ".ai", ".eps", ".afphoto", ".afdesign", ".afpub")
 
+PREVIEW_FORMATS = ["AVIF", "PNG", "WEBP", "JPEG"]
+NAMING_MODES = ["manual", "automation"]
+
 
 class SettingsDialog(tk.Toplevel):
 
@@ -51,13 +54,16 @@ class SettingsDialog(tk.Toplevel):
         self.config = config
         self.on_saved = on_saved
         self.title("Settings")
-        self.geometry("560x520")
+        self.geometry("560x560")
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
 
         self.engine_var = tk.StringVar(value=getattr(config, "ENGINE", "adobe"))
         self.theme_var = tk.StringVar(value=getattr(config, "THEME", "dark"))
+        self.preview_format_var = tk.StringVar(value=getattr(config, "PREVIEW_FORMAT", "AVIF"))
+        self.thumb_format_var = tk.StringVar(value=getattr(config, "THUMB_FORMAT", "AVIF"))
+        self.naming_mode_var = tk.StringVar(value=getattr(config, "NAMING_MODE", "manual"))
         self.int_vars = {k: tk.StringVar(value=str(getattr(config, k, "")))
                          for k, _, _ in INT_FIELDS}
         self.path_vars = {k: tk.StringVar(value=self._stored_path(k))
@@ -89,7 +95,7 @@ class SettingsDialog(tk.Toplevel):
         self._build_engine(tabs)
         self._build_apps(tabs)
         self._build_formats(tabs)
-        self._build_numbers(tabs, "Preview")
+        self._build_preview(tabs)
         self._build_numbers(tabs, "Pipeline")
         self._build_appearance(tabs)
 
@@ -154,6 +160,63 @@ class SettingsDialog(tk.Toplevel):
         tk.Label(frame, text="Note: .afphoto / .afdesign / .afpub are only\nprocessed when the engine is Affinity.",
                  fg="gray").pack(anchor="w", padx=10, pady=10)
 
+    def _build_preview(self, tabs):
+        frame = tk.Frame(tabs)
+        tabs.add(frame, text="Preview")
+
+        # Preview format
+        tk.Label(frame, text="Preview output format", font=("Arial", 10, "bold")).pack(
+            anchor="w", padx=10, pady=(10, 5))
+        row = tk.Frame(frame)
+        row.pack(fill="x", padx=20, pady=3)
+        tk.Label(row, text="Format:", width=14, anchor="w").pack(side="left")
+        combo = ttk.Combobox(row, textvariable=self.preview_format_var,
+                             values=PREVIEW_FORMATS, state="readonly", width=10)
+        combo.pack(side="left")
+        tk.Label(frame, text="Applies to full preview and contact sheets.",
+                 fg="gray").pack(anchor="w", padx=20)
+
+        # Thumbnail format
+        tk.Label(frame, text="Thumbnail output format", font=("Arial", 10, "bold")).pack(
+            anchor="w", padx=10, pady=(10, 5))
+        row = tk.Frame(frame)
+        row.pack(fill="x", padx=20, pady=3)
+        tk.Label(row, text="Format:", width=14, anchor="w").pack(side="left")
+        combo = ttk.Combobox(row, textvariable=self.thumb_format_var,
+                             values=PREVIEW_FORMATS, state="readonly", width=10)
+        combo.pack(side="left")
+        tk.Label(frame, text="Applies to thumbnail tier.",
+                 fg="gray").pack(anchor="w", padx=20)
+
+        # Preview dimensions
+        tk.Label(frame, text="Preview max dimensions (px)", font=("Arial", 10, "bold")).pack(
+            anchor="w", padx=10, pady=(10, 5))
+        for key in ("PREVIEW_WIDTH", "PREVIEW_HEIGHT", "THUMB_WIDTH", "THUMB_HEIGHT"):
+            label_map = {
+                "PREVIEW_WIDTH": "Preview width",
+                "PREVIEW_HEIGHT": "Preview height",
+                "THUMB_WIDTH": "Thumbnail width",
+                "THUMB_HEIGHT": "Thumbnail height",
+            }
+            row = tk.Frame(frame)
+            row.pack(fill="x", padx=20, pady=3)
+            tk.Label(row, text=label_map[key], width=14, anchor="w").pack(side="left")
+            tk.Entry(row, textvariable=self.int_vars[key], width=10).pack(side="left")
+
+        # Quality settings
+        tk.Label(frame, text="Quality", font=("Arial", 10, "bold")).pack(
+            anchor="w", padx=10, pady=(10, 5))
+        for key in ("AVIF_QUALITY", "AVIF_SPEED", "THUMB_QUALITY"):
+            label_map = {
+                "AVIF_QUALITY": "AVIF quality (0-100)",
+                "AVIF_SPEED": "AVIF speed (0=best, 10=fastest)",
+                "THUMB_QUALITY": "Thumbnail quality (0-100)",
+            }
+            row = tk.Frame(frame)
+            row.pack(fill="x", padx=20, pady=3)
+            tk.Label(row, text=label_map[key], width=28, anchor="w").pack(side="left")
+            tk.Entry(row, textvariable=self.int_vars[key], width=10).pack(side="left")
+
     def _build_numbers(self, tabs, tab_name):
         frame = tk.Frame(tabs)
         tabs.add(frame, text=tab_name)
@@ -164,6 +227,20 @@ class SettingsDialog(tk.Toplevel):
             row.pack(fill="x", padx=10, pady=3)
             tk.Label(row, text=label, width=28, anchor="w").pack(side="left")
             tk.Entry(row, textvariable=self.int_vars[key], width=10).pack(side="left")
+
+        # Naming mode in Pipeline tab
+        if tab_name == "Pipeline":
+            tk.Label(frame, text="", height=1).pack()  # spacer
+            tk.Label(frame, text="Naming mode", font=("Arial", 10, "bold")).pack(
+                anchor="w", padx=10, pady=(10, 5))
+            row = tk.Frame(frame)
+            row.pack(fill="x", padx=20, pady=3)
+            tk.Label(row, text="Mode:", width=14, anchor="w").pack(side="left")
+            combo = ttk.Combobox(row, textvariable=self.naming_mode_var,
+                                 values=NAMING_MODES, state="readonly", width=14)
+            combo.pack(side="left")
+            tk.Label(frame, text="manual = prompt per asset; automation = use source name",
+                     fg="gray").pack(anchor="w", padx=20)
 
     def _build_appearance(self, tabs):
         frame = tk.Frame(tabs)
@@ -215,7 +292,13 @@ class SettingsDialog(tk.Toplevel):
             self.on_saved()
 
     def _save(self):
-        values = {"ENGINE": self.engine_var.get(), "THEME": self.theme_var.get()}
+        values = {
+            "ENGINE": self.engine_var.get(),
+            "THEME": self.theme_var.get(),
+            "PREVIEW_FORMAT": self.preview_format_var.get(),
+            "THUMB_FORMAT": self.thumb_format_var.get(),
+            "NAMING_MODE": self.naming_mode_var.get(),
+        }
         try:
             for key, var in self.int_vars.items():
                 values[key] = int(var.get().strip())

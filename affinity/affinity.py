@@ -64,8 +64,9 @@ class AffinityController:
         # answer Later) and the template/welcome opener. Both appear
         # async after launch and would stall the queue, so sweep them
         # before the MCP handshake and again once ready.
+        automation_mode = getattr(self.config, "NAMING_MODE", "manual") == "automation"
         try:
-            dismiss_affinity_popups(logger=self.logger, timeout=6)
+            dismiss_affinity_popups(logger=self.logger, timeout=6, automation_mode=automation_mode)
         except Exception:
             pass
         self._wait_for_mcp()
@@ -152,10 +153,11 @@ class AffinityController:
             self.restart()
         self.logger.info(f"Opening in Affinity: {file.name}")
         subprocess.Popen([str(self.config.AFFINITY_PATH), str(file)])
-        # A late updater/template popup can steal focus and stall the
+        # A late updater/template/PDF options popup can steal focus and stall the
         # open — sweep once before waiting for the document.
+        automation_mode = getattr(self.config, "NAMING_MODE", "manual") == "automation"
         try:
-            dismiss_affinity_popups(logger=self.logger, timeout=4)
+            dismiss_affinity_popups(logger=self.logger, timeout=4, automation_mode=automation_mode)
         except Exception:
             pass
         self.wait_until_ready(file.name)
