@@ -106,8 +106,9 @@ class TestArchiveExtractor:
 
 class TestArchiveInspector:
     def setup_method(self):
+        self.config = MockConfig()
         self.logger = MockLogger()
-        self.inspector = ArchiveInspector(self.logger)
+        self.inspector = ArchiveInspector(self.config, self.logger)
 
     def test_list_zip_contents(self):
         with tempfile.TemporaryDirectory() as tmpdir:

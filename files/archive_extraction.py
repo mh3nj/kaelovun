@@ -236,8 +236,16 @@ class ArchiveExtractor:
 class ArchiveInspector:
     """Inspect archive contents without extracting."""
 
-    def __init__(self, logger):
+    def __init__(self, config, logger):
+        self.config = config
         self.logger = logger
+        self._rar_archive = None
+
+    def _get_rar_archive(self):
+        if self._rar_archive is None:
+            from files.archive import RarArchive
+            self._rar_archive = RarArchive(self.config, self.logger)
+        return self._rar_archive
 
     def list_contents(self, archive_path: Path) -> List[dict]:
         """List archive contents with metadata."""
@@ -247,8 +255,19 @@ class ArchiveInspector:
             return self._list_tar(archive_path)
         elif name_lower.endswith('.zip'):
             return self._list_zip(archive_path)
+        elif name_lower.endswith('.rar'):
+            return self._list_rar(archive_path)
         else:
             return self._list_patool(archive_path)
+
+    def _list_rar(self, archive_path: Path) -> List[dict]:
+        """List RAR contents using rar l command."""
+        # We need a config - create minimal one
+        from config import Config
+        config = Config()
+        rar_archive = self._get_rar_archive(config)
+        paths = rar_archive.list_archive(archive_path)
+        return [{'name': p, 'size': 0, 'type': 'file'} for p in paths]
 
     def _list_tar(self, archive_path: Path) -> List[dict]:
         contents = []
@@ -302,7 +321,7 @@ class ArchiveClassifier:
         self.config = config
         self.logger = logger
         self.extractor = ArchiveExtractor(config, logger)
-        self.inspector = ArchiveInspector(logger)
+        self.inspector = ArchiveInspector(config, logger)
 
     def classify(self, path: Path) -> dict:
         """

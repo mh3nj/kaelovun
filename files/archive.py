@@ -98,39 +98,47 @@ class RarArchive:
     def list_archive(self, archive: Path) -> list[str]:
         """List contents of a RAR archive. Returns list of relative paths."""
         rar = self._rar_exe()
+        # Use 'lt' (technical list) for more parseable output
         command = [
             str(rar),
-            "l",
+            "lt",
             str(archive),
         ]
         result = subprocess.run(command, capture_output=True, text=True)
         if result.returncode != 0:
-            self.logger.error(f"List failed: {archive.name}")
-            self.logger.error(result.stderr or result.stdout)
-            return []
+            # Fallback to regular 'l' command
+            command = [str(rar), "l", str(archive)]
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode != 0:
+                self.logger.error(f"List failed: {archive.name}")
+                self.logger.error(result.stderr or result.stdout)
+                return []
 
-        # Parse RAR list output - format is typically:
-        # Name             Size   Packed Ratio  Date   Time     Attr      CRC   Meth Ver
-        # -------------------------------------------------------------------------------
-        # folder/file.txt    123     123  50%  01-01-2024 12:00  -rw-r--r--  ABCD1234  m5  2.9
+        # Parse RAR technical list output - format:
+        # Attr  Size  Packed  Ratio  Date  Time  Name
+        # ----  ----  -----  -----  ----  ----  ----
+        # -rw-r--r--  1234  567  46%  01-01-2024 12:00  folder/file.txt
         lines = result.stdout.splitlines()
         contents = []
         for line in lines:
-            # Skip header lines and summary lines
+            # Skip header lines
             if not line.strip():
                 continue
-            if line.startswith('Name') or line.startswith('---') or line.startswith('----'):
+            if line.startswith('Attr') or line.startswith('----'):
                 continue
             if 'files' in line.lower() and 'bytes' in line.lower():
                 continue
-            # Extract filename (first column before size)
-            parts = line.split()
-            if len(parts) >= 1:
-                # The filename might have spaces, so we need a different approach
-                # RAR output typically has fixed-width columns, but let's try to extract
-                # the first column which is the name
-                name = parts[0]
-                # Check if it looks like a path (contains / or \)
-                if '/' in name or '\\' in name or '.' in name:
+            # Technical format: attributes, size, packed, ratio, date, time, name
+            # Split by whitespace, the last field is the name (may contain spaces)
+            parts = line.split(None, 6)  # Split into max 7 parts
+            if len(parts) >= 7:
+                name = parts[6]  # Name is the 7th field
+                if name and not all(c in '.A' for c in name):
                     contents.append(name.replace('\\', '/'))
+            elif len(parts) >= 1:
+                # Fallback: try to find the name part
+                # The name is typically after the date/time fields
+                candidate = parts[-1]
+                if candidate and not all(c in '.A' for c in candidate):
+                    contents.append(candidate.replace('\\', '/'))
         return contents
