@@ -24,6 +24,7 @@ from files.naming import NameRequest
 from files.filename import FilenameManager
 from files.cleanup import CleanupManager
 from files.archive_extraction import ArchiveExtractor
+from files.session import AssetStateManager
 from adobe.recovery import AdobeRecovery
 
 
@@ -47,6 +48,7 @@ class AssetProcessor:
         self.recovery = AdobeRecovery(config, logger)
         self.classifier = PackageClassifier(config, logger)
         self.extractor = ArchiveExtractor(config, logger, max_depth=getattr(config, 'MAX_ARCHIVE_DEPTH', 2))
+        self.state_manager = AssetStateManager(config, logger)
 
         self.should_continue = lambda: True
         self._total_packages = 0
@@ -57,9 +59,21 @@ class AssetProcessor:
     def process(self, job):
         """Main entry point - process a job which may be a file, directory, or archive."""
         workspace_created = False
+        folder_to_track = None
         try:
             if not self.storage.require_space(job.source_file.parent, should_continue=self.should_continue):
                 raise RuntimeError("Queue stopped while waiting for disk space.")
+
+            # Track folder-level state for directories and archives
+            source_folder = None
+            if job.is_archive:
+                source_folder = job.source_file.parent
+            elif job.source_file.is_dir():
+                source_folder = job.source_file
+
+            if source_folder:
+                folder_to_track = source_folder
+                self.state_manager.start_processing(source_folder)
 
             # Create workspace
             self._workspace_root = self._create_workspace(job)
@@ -86,15 +100,34 @@ class AssetProcessor:
             job.set_status(JobStatus.DONE)
             self._processed += 1
 
+            # Mark file as completed in state tracking
+            if folder_to_track:
+                archive_name = job.archive_file.name if job.archive_file else None
+                preview_name = None
+                thumb_name = None
+                if job.source_file.suffix.lower() in ('.psd', '.ai', '.eps', '.indd', '.indt'):
+                    preview_name = job.source_file.stem + ".avif"
+                    thumb_name = job.source_file.stem + ".thumb.avif"
+                self.state_manager.mark_file_completed(
+                    folder_to_track, job.source_file.name,
+                    archive_name=archive_name,
+                    preview_name=preview_name,
+                    thumb_name=thumb_name
+                )
+
         except Exception as error:
             self._failed += 1
             self.handle_error(job, error)
+            if folder_to_track:
+                self.state_manager.mark_interrupted(folder_to_track)
         finally:
             if workspace_created:
                 try:
                     self._cleanup_workspace_root()
                 except Exception:
                     pass
+            if folder_to_track and job.status == JobStatus.DONE:
+                self.state_manager.mark_completed(folder_to_track)
 
     def _create_workspace(self, job) -> Path:
         """Create a safe temporary workspace for processing."""

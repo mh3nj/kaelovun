@@ -12,6 +12,7 @@ import pytest
 
 from files.archive_extraction import ArchiveExtractor, ArchiveInspector, ArchiveClassifier
 from files.archive import RarArchive
+from files.session import AssetStateManager
 from unittest.mock import MagicMock, patch
 
 
@@ -237,3 +238,122 @@ class TestRarArchiveStructure:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestAssetStateManager:
+    def setup_method(self):
+        self.config = MockConfig()
+        self.logger = MockLogger()
+        self.state_manager = AssetStateManager(self.config, self.logger)
+
+    def test_state_file_creation(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+
+            self.state_manager.start_processing(folder)
+
+            state_path = self.state_manager.state_path(folder)
+            assert state_path.exists()
+
+            state = self.state_manager.load_state(folder)
+            assert state["status"] == "processing"
+            assert state["started_at"] is not None
+
+    def test_mark_file_completed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+            (folder / "logo.psd").write_text("psd")
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_file_completed(folder, "logo.psd", archive_name="project.rar", preview_name="logo.avif")
+
+            state = self.state_manager.load_state(folder)
+            assert state["files"]["logo.psd"]["status"] == "completed"
+            assert state["files"]["logo.psd"]["archive"] == "project.rar"
+            assert state["files"]["logo.psd"]["preview"] == "logo.avif"
+
+    def test_mark_interrupted(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_interrupted(folder)
+
+            state = self.state_manager.load_state(folder)
+            assert state["status"] == "interrupted"
+            assert state["interrupted_at"] is not None
+
+    def test_mark_completed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_completed(folder)
+
+            state = self.state_manager.load_state(folder)
+            assert state["status"] == "completed"
+            assert state["completed_at"] is not None
+
+    def test_get_pending_files_skips_completed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+            psd = folder / "logo.psd"
+            psd.write_text("psd")
+            rar = folder / "logo.rar"
+            rar.write_bytes(b"")
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_file_completed(folder, "logo.psd", archive_name="logo.rar")
+            self.state_manager.mark_completed(folder)
+
+            from pipeline.job import Job
+            job = Job(psd)
+            pending = self.state_manager.get_pending_files(folder, [job])
+
+            assert len(pending) == 0
+
+    def test_get_pending_files_returns_pending(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+            psd = folder / "logo.psd"
+            psd.write_text("psd")
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_file_failed(folder, "logo.psd", "power outage")
+
+            from pipeline.job import Job
+            job = Job(psd)
+            pending = self.state_manager.get_pending_files(folder, [job])
+
+            assert len(pending) == 1
+            assert pending[0].source_file == psd
+
+    def test_state_file_survives_reload(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            folder = tmpdir / "project"
+            folder.mkdir()
+            (folder / "logo.psd").write_text("psd")
+
+            self.state_manager.start_processing(folder)
+            self.state_manager.mark_file_completed(folder, "logo.psd")
+            self.state_manager.mark_completed(folder)
+
+            # Create new state manager (simulates app restart)
+            state_manager2 = AssetStateManager(self.config, self.logger)
+            state = state_manager2.load_state(folder)
+
+            assert state["status"] == "completed"
+            assert "logo.psd" in state["files"]

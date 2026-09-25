@@ -9,6 +9,7 @@ import shutil
 
 from pipeline.job import Job
 from files.archive_extraction import ArchiveClassifier
+from files.session import AssetStateManager
 
 
 class AssetScanner:
@@ -17,6 +18,7 @@ class AssetScanner:
         self.config = config
         self.logger = logger
         self.classifier = ArchiveClassifier(config, logger)
+        self.state_manager = AssetStateManager(config, logger)
 
     def scan_folder(self, folder: Path) -> list:
         folder = Path(folder)
@@ -25,7 +27,29 @@ class AssetScanner:
             wanted = set(self.config.scannable_extensions())
         except AttributeError:
             wanted = {".psd", ".ai", ".eps"}
-        jobs = []
+
+        # Check if this folder was previously processed
+        state = self.state_manager.load_state(folder)
+        if state["status"] == "completed":
+            # Check if all files have .rar archives
+            all_archived = True
+            for item in folder.rglob("*"):
+                if not item.is_file():
+                    continue
+                ext = item.suffix.lower()
+                if ext in wanted and ext not in ('.zip', '.rar', '.7z'):
+                    archive_name = item.stem + ".rar"
+                    if not (folder / archive_name).exists():
+                        all_archived = False
+                        break
+            if all_archived:
+                self.logger.info(f"Folder already fully processed. Skipping.")
+                return []
+            else:
+                self.logger.info(f"Folder marked completed but some files lack archives. Reprocessing.")
+
+        # Scan for files, filtering out already-processed ones
+        raw_jobs = []
         for item in folder.rglob("*"):
             if not item.is_file():
                 continue
@@ -37,7 +61,7 @@ class AssetScanner:
                 existing = self.find_existing_preview(item)
                 if existing:
                     job.existing_preview = existing
-                jobs.append(job)
+                raw_jobs.append(job)
                 continue
             extension = item.suffix.lower()
             if extension in wanted:
@@ -45,7 +69,13 @@ class AssetScanner:
                 existing = self.find_existing_preview(item)
                 if existing:
                     job.existing_preview = existing
-                jobs.append(job)
+                raw_jobs.append(job)
+
+        # Filter out already-processed files using state manager
+        jobs = self.state_manager.get_pending_files(folder, raw_jobs)
+
+        if state["status"] == "interrupted":
+            self.logger.info(f"Folder was interrupted. Reprocessing {len(jobs)} pending files.")
         self.logger.info(f"Found {len(jobs)} scannable files ({sorted(wanted)}).")
         return jobs
 
