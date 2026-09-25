@@ -147,6 +147,35 @@ class TestAssetScanner:
             assert jobs[0].is_archive is True
             assert jobs[0].archive_metadata is not None
 
+    def test_scan_folder_completed_check_finds_archives(self):
+        """Test that completed check path also discovers archives."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            import zipfile
+            (tmpdir / "logo.psd").write_text("psd")
+            zip_path = tmpdir / "project.zip"
+            with zipfile.ZipFile(zip_path, 'w') as zf:
+                zf.writestr("logo.psd", "psd")
+
+            # First scan - mark as completed
+            jobs1 = self.scanner.scan_folder(tmpdir)
+            assert len(jobs1) == 2
+
+            # Simulate completed state
+            from files.session import AssetStateManager
+            state_manager = AssetStateManager(self.config, self.logger)
+            state_manager.start_processing(tmpdir)
+            state_manager.mark_file_completed(tmpdir, "logo.psd", archive_name="project.rar")
+            state_manager.mark_file_completed(tmpdir, "project.zip", archive_name="project.rar")
+            state_manager.mark_completed(tmpdir)
+
+            # Create the archive file to simulate completion
+            (tmpdir / "project.rar").write_bytes(b"fake rar")
+
+            # Second scan - should find no pending (already completed)
+            jobs2 = self.scanner.scan_folder(tmpdir)
+            assert len(jobs2) == 0
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
