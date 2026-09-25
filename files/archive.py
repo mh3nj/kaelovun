@@ -94,3 +94,43 @@ class RarArchive:
             return False
         self.logger.info(f"  Verified OK: {archive.name}")
         return True
+
+    def list_archive(self, archive: Path) -> list[str]:
+        """List contents of a RAR archive. Returns list of relative paths."""
+        rar = self._rar_exe()
+        command = [
+            str(rar),
+            "l",
+            str(archive),
+        ]
+        result = subprocess.run(command, capture_output=True, text=True)
+        if result.returncode != 0:
+            self.logger.error(f"List failed: {archive.name}")
+            self.logger.error(result.stderr or result.stdout)
+            return []
+
+        # Parse RAR list output - format is typically:
+        # Name             Size   Packed Ratio  Date   Time     Attr      CRC   Meth Ver
+        # -------------------------------------------------------------------------------
+        # folder/file.txt    123     123  50%  01-01-2024 12:00  -rw-r--r--  ABCD1234  m5  2.9
+        lines = result.stdout.splitlines()
+        contents = []
+        for line in lines:
+            # Skip header lines and summary lines
+            if not line.strip():
+                continue
+            if line.startswith('Name') or line.startswith('---') or line.startswith('----'):
+                continue
+            if 'files' in line.lower() and 'bytes' in line.lower():
+                continue
+            # Extract filename (first column before size)
+            parts = line.split()
+            if len(parts) >= 1:
+                # The filename might have spaces, so we need a different approach
+                # RAR output typically has fixed-width columns, but let's try to extract
+                # the first column which is the name
+                name = parts[0]
+                # Check if it looks like a path (contains / or \)
+                if '/' in name or '\\' in name or '.' in name:
+                    contents.append(name.replace('\\', '/'))
+        return contents
