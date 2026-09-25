@@ -28,25 +28,30 @@ class AssetScanner:
         except AttributeError:
             wanted = {".psd", ".ai", ".eps"}
 
-        # Check if this folder was previously processed
+        # Check if this folder was previously processed and fully complete
         state = self.state_manager.load_state(folder)
         if state["status"] == "completed":
-            # Check if all files have .rar archives
-            all_archived = True
+            # Use state manager to check if any files need processing
+            # First, do a raw scan to get all jobs
+            raw_jobs = []
             for item in folder.rglob("*"):
                 if not item.is_file():
                     continue
+                if self.classifier.extractor.is_archive(item):
+                    job = Job(item)
+                    job.is_archive = True
+                    job.archive_metadata = self.classifier.classify(item)
+                    raw_jobs.append(job)
+                    continue
                 ext = item.suffix.lower()
-                if ext in wanted and ext not in ('.zip', '.rar', '.7z'):
-                    archive_name = item.stem + ".rar"
-                    if not (folder / archive_name).exists():
-                        all_archived = False
-                        break
-            if all_archived:
+                if ext in wanted:
+                    raw_jobs.append(Job(item))
+            pending = self.state_manager.get_pending_files(folder, raw_jobs)
+            if not pending and not state.get("interrupted_at"):
                 self.logger.info(f"Folder already fully processed. Skipping.")
                 return []
             else:
-                self.logger.info(f"Folder marked completed but some files lack archives. Reprocessing.")
+                self.logger.info(f"Folder needs reprocessing ({len(pending)} pending).")
 
         # Scan for files, filtering out already-processed ones
         raw_jobs = []
