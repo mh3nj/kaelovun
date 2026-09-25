@@ -7,6 +7,20 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## 1.4.0 — 2026-09-25
+
+### Fixed
+- **Archive processing bug:** `scan_folder` now properly marks `.zip`, `.rar`, and other archive files with `is_archive=True`. Previously archives were treated as opaque files and re-compiled without extraction, causing massive RARs (up to 3TB). Archives are now properly extracted, contents classified, and re-archived with the actual asset files.
+- **Archive cleanup:** Extracted archive files are now properly cleaned up between jobs via `cleanup_all()`.
+- **Archive naming:** Output RARs are now named after the source archive file stem instead of always "background".
+- **`_use_affinity` fix:** `.psd` files are no longer incorrectly routed to Affinity (which cannot open PSDs). `.psd` always uses Photoshop; `.ai`/`.eps` follow the `ENGINE` setting.
+
+### Added
+- **Contact sheet preview for archives:** When an archive contains multiple images, Kaelovun generates a grid contact sheet (all images in one picture) with full AVIF preview and thumbnail. This lets Evoury display the archive as a single browsable card instead of an unviewable archive.
+- **`PreviewProcessor.create_contact_sheet()`:** New method that creates a grid/contact sheet PNG from a list of image paths, configurable column count.
+
+---
+
 ## 1.3.1 — 2026-09-15 (rebranded as Kaelovun — 2026-09-16)
 
 ### Changed
