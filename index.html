@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07070a">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="Kaelovun ,  Universal Creative Asset Processing & Preservation Engine.">
+<meta property="og:title" content="Kaelovun ,  Creative Asset Processing & Preservation">
+<meta property="og:description" content="Understand what you can. Preserve what you cannot.">
+<title>Kaelovun ,  Universal Creative Asset Processing & Preservation Engine</title>
+<!-- Persian typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   KAELOVUN ,  SINGLE FILE GITHUB PAGES EDITION
+   Replace the placeholder media sources marked MEDIA_*.
+   Everything else is intentionally self-contained.
+   ========================================================= */
+
+:root{
+  --bg:#07070a;
+  --bg2:#0b0b10;
+  --panel:rgba(255,255,255,.055);
+  --panel-strong:rgba(255,255,255,.085);
+  --line:rgba(255,255,255,.10);
+  --line2:rgba(255,255,255,.16);
+  --text:#f5f5f7;
+  --muted:#a7a7b2;
+  --soft:#d4d4dc;
+  --accent:#33ad3d;
+  --accent2:#8effc1;
+  --warm:#ffb86b;
+  --danger:#ff6f91;
+  --shadow:0 30px 100px rgba(0,0,0,.45);
+  --radius:28px;
+  --max:1240px;
+  --serif:Georgia,"Times New Roman",serif;
+  --sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{
+  margin:0;
+  background:
+    radial-gradient(900px 500px at 15% -5%,rgba(216,255,62,.11),transparent 65%),
+    radial-gradient(900px 600px at 90% 8%,rgba(142,255,193,.07),transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6;
+  overflow-x:hidden;
+}
+body:before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:20;opacity:.055;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+  mix-blend-mode:soft-light;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit}
+.container{width:min(calc(100% - 40px),var(--max));margin:auto}
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:1000;box-shadow:0 0 18px var(--accent)}
+.nav{
+  position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100;
+  width:min(calc(100% - 28px),1180px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px 10px 18px;
+  border:1px solid var(--line);border-radius:999px;
+  background:rgba(8,8,11,.72);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:0 16px 50px rgba(0,0,0,.24);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.04em}
+.brand-logo{width:31px;height:31px;display:block;object-fit:contain;border-radius:7px}
+.navlinks{display:flex;gap:4px;align-items:center}
+.navlinks a,.lang button{
+  border:0;background:transparent;color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer;transition:.25s;
+}
+.navlinks a:hover,.lang button:hover{background:rgba(255,255,255,.06);color:var(--text)}
+.lang{display:flex;gap:2px;margin-left:5px;border-left:1px solid var(--line);padding-left:7px}
+.lang button.active{color:var(--bg);background:var(--accent);font-weight:800}
+
+.hero{min-height:100svh;display:grid;place-items:center;padding:150px 0 90px;position:relative}
+.hero-grid{
+  display:grid;grid-template-columns:1.05fr .95fr;gap:70px;align-items:center;
+}
+.kicker{
+  display:inline-flex;gap:9px;align-items:center;
+  border:1px solid var(--line);background:rgba(255,255,255,.035);
+  padding:7px 11px;border-radius:999px;color:var(--soft);font-size:.78rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;
+}
+.kicker i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 15px var(--accent)}
+h1{
+  font-size:clamp(4.3rem,10vw,9.7rem);line-height:.83;letter-spacing:-.085em;margin:25px 0 28px;
+  font-weight:850;
+}
+h1 em{font-family:var(--serif);font-weight:400;letter-spacing:-.07em;color:var(--accent)}
+.hero-copy{font-size:clamp(1.05rem,1.5vw,1.3rem);max-width:650px;color:var(--muted)}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  padding:13px 18px;border-radius:999px;border:1px solid var(--line2);
+  transition:.25s;cursor:pointer;font-weight:750;
+}
+.btn.primary{background:var(--accent);color:#080809;border-color:var(--accent)}
+.btn:hover{transform:translateY(-2px);box-shadow:0 15px 35px rgba(0,0,0,.25)}
+.btn.secondary{background:rgba(255,255,255,.04);color:var(--text)}
+.hero-media{
+  aspect-ratio:4/5;border-radius:40px;border:1px solid var(--line);
+  background:
+    linear-gradient(145deg,rgba(216,255,62,.08),transparent 45%),
+    linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.015));
+  box-shadow:var(--shadow);overflow:hidden;position:relative;
+}
+.hero-media img,.media img,.media video{width:100%;height:100%;object-fit:cover;display:block}
+.media-placeholder{
+  position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+}
+.hero-orbit{
+  position:absolute;inset:12%;border:1px solid rgba(216,255,62,.18);border-radius:50%;
+  transform:rotate(-18deg);animation:float 9s ease-in-out infinite;
+}
+.hero-orbit:before,.hero-orbit:after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:var(--accent)}
+.hero-orbit:before{top:7%;left:20%}.hero-orbit:after{bottom:12%;right:12%;background:var(--accent2)}
+@keyframes float{50%{transform:rotate(-18deg) scale(1.035)}}
+
+.marquee{
+  border-block:1px solid var(--line);overflow:hidden;white-space:nowrap;background:rgba(255,255,255,.018);
+}
+.marquee-track{display:inline-flex;gap:35px;padding:15px 0;animation:marquee 28s linear infinite}
+.marquee span{font-size:.78rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#777783}
+.marquee b{color:var(--accent)}
+@keyframes marquee{to{transform:translateX(-50%)}}
+
+.section{padding:145px 0}
+.section-head{display:flex;justify-content:space-between;gap:30px;align-items:end;margin-bottom:55px}
+.eyebrow{color:var(--accent);font-size:.76rem;text-transform:uppercase;letter-spacing:.16em;font-weight:900}
+h2{font-size:clamp(2.5rem,6vw,6rem);line-height:.92;letter-spacing:-.07em;margin:10px 0 0;max-width:850px}
+.lead{max-width:450px;color:var(--muted)}
+
+.bento{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{
+  border:1px solid var(--line);background:var(--panel);border-radius:var(--radius);
+  padding:30px;position:relative;overflow:hidden;box-shadow:0 20px 70px rgba(0,0,0,.12);
+}
+.card:after{
+  content:"";position:absolute;width:180px;height:180px;right:-80px;top:-80px;
+  border-radius:50%;background:var(--accent);filter:blur(90px);opacity:.06;pointer-events:none;
+}
+.card h3{font-size:1.35rem;margin:0 0 10px;letter-spacing:-.04em}
+.card p{color:var(--muted);margin:0}
+.span-7{grid-column:span 7}.span-5{grid-column:span 5}.span-4{grid-column:span 4}.span-8{grid-column:span 8}.span-12{grid-column:span 12}
+.number{font-size:.75rem;color:#777783;letter-spacing:.14em;font-weight:800}
+.bigword{font-size:clamp(2rem,4vw,4.8rem);line-height:.9;letter-spacing:-.07em;margin:35px 0 10px}
+.bigword em{font-family:var(--serif);font-weight:400;color:var(--accent)}
+.feature-list{display:grid;gap:12px;margin-top:25px}
+.feature{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-top:1px solid var(--line)}
+.feature:first-child{border-top:0}
+.dot{flex:0 0 9px;height:9px;border-radius:50%;background:var(--accent);margin-top:9px;box-shadow:0 0 14px rgba(216,255,62,.45)}
+
+.pipeline{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-top:35px}
+.step{min-height:175px;border:1px solid var(--line);background:rgba(255,255,255,.035);padding:18px;border-radius:18px;display:flex;flex-direction:column;justify-content:space-between}
+.step b{font-size:1.05rem}.step small{color:#777783}.step:nth-child(4n+1){background:linear-gradient(160deg,rgba(216,255,62,.12),rgba(255,255,255,.025))}
+
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:20px;margin-top:45px}
+.flow-box{padding:28px;border:1px solid var(--line);border-radius:24px;background:var(--panel);min-height:160px}
+.flow-box strong{font-size:1.35rem}.flow-arrow{color:var(--accent);font-size:2rem}
+
+.media{
+  aspect-ratio:16/9;border-radius:30px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(135deg,rgba(216,255,62,.07),rgba(255,255,255,.025));position:relative;
+}
+.media.tall{aspect-ratio:4/5}.media.square{aspect-ratio:1}
+.media img{opacity:.001;transition:opacity .5s}.media img.loaded{opacity:1}
+
+.manifest{
+  border:1px solid var(--line);border-radius:28px;overflow:hidden;background:rgba(255,255,255,.025);
+}
+.manifest-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--line);padding:17px 22px;gap:15px}
+.manifest-row:first-child{border-top:0;background:rgba(255,255,255,.045);font-weight:800}
+.manifest-row span:nth-child(2){color:var(--accent)}.manifest-row span:last-child{color:var(--muted)}
+
+.quote{
+  padding:70px clamp(25px,7vw,100px);border-radius:40px;border:1px solid var(--line);
+  background:linear-gradient(145deg,rgba(216,255,62,.10),rgba(255,255,255,.025) 50%,rgba(142,255,193,.06));
+  text-align:center;position:relative;overflow:hidden;
+}
+.quote p{font-size:clamp(2rem,5vw,5.7rem);line-height:.98;letter-spacing:-.07em;margin:0}
+.quote em{font-family:var(--serif);font-weight:400;color:var(--accent)}
+
+details{border-top:1px solid var(--line);padding:20px 0}
+summary{cursor:pointer;font-weight:800;list-style:none;display:flex;justify-content:space-between}
+summary:after{content:"+";color:var(--accent);font-size:1.4rem}
+details[open] summary:after{content:"−"}
+details p{color:var(--muted);max-width:800px}
+
+.footer{padding:80px 0 45px;border-top:1px solid var(--line)}
+.footer-grid{display:flex;justify-content:space-between;gap:30px;align-items:end}
+.footer h2{font-size:clamp(3rem,8vw,8rem)}
+.mini{color:#777783;font-size:.82rem}
+
+.reveal{opacity:0;visibility:hidden}
+.hero .reveal{opacity:1;visibility:visible}
+.reveal.visible{visibility:visible}
+.gsap-reveal{will-change:transform,opacity}
+.gsap-float{will-change:transform}
+.hero-copy,.hero-actions,.kicker,h1,.hero-media{will-change:transform,opacity}
+.hero .hero-media{opacity:1;visibility:visible}
+.card,.step,.flow-box,.manifest,.media,.quote{will-change:transform,opacity}
+
+[dir="rtl"] body,[dir="rtl"] button,[dir="rtl"] input,[dir="rtl"] textarea{font-family:"Vazirmatn",var(--sans)}
+[dir="rtl"] .nav{direction:rtl}
+[dir="rtl"] .lang{border-left:0;border-right:1px solid var(--line);padding-left:0;padding-right:7px}
+[dir="rtl"] .feature{direction:rtl}
+[dir="rtl"] .flow{direction:rtl}
+[dir="rtl"] .manifest-row{direction:rtl}
+[dir="rtl"] .hero-copy,.rtl-text{text-align:right}
+[dir="rtl"] h1,[dir="rtl"] h2{letter-spacing:-.055em}
+
+@media(max-width:900px){
+  .navlinks a:not(:last-of-type){display:none}
+  .hero-grid{grid-template-columns:1fr;gap:45px}
+  .hero-media{max-width:650px;width:100%;margin:auto}
+  .section-head{display:block}
+  .lead{margin-top:20px}
+  .span-7,.span-5,.span-4,.span-8{grid-column:span 12}
+  .pipeline{grid-template-columns:repeat(3,1fr)}
+  .flow{grid-template-columns:1fr;}.flow-arrow{transform:rotate(90deg);text-align:center}
+}
+@media(max-width:600px){
+  .container{width:min(calc(100% - 26px),var(--max))}
+  .nav{top:8px;width:calc(100% - 16px)}
+  .brand span{display:none}
+  .hero{padding-top:120px}
+  .section{padding:95px 0}
+  .card{padding:23px}
+  .pipeline{grid-template-columns:1fr 1fr}
+  .manifest-row{grid-template-columns:1fr}
+  .manifest-row:first-child{display:none}
+  .footer-grid{display:block}
+  h1{font-size:clamp(4rem,20vw,7rem)}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+}
+
+/* Kaelovun product imagery */
+.hero-media img,
+#freedom .media img {
+  display:block;
+  width:100%;
+  height:auto;
+  object-fit:contain;
+  background:var(--paper);
+}
+.hero-media img {
+  border-radius:14px;
+}
+#freedom .media {
+  overflow:hidden;
+  border-radius:16px;
+}
+
+/* Persian typography */
+[dir="rtl"],
+[dir="rtl"] body,
+[dir="rtl"] button,
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3,
+[dir="rtl"] p,
+[dir="rtl"] a,
+[dir="rtl"] .eyebrow,
+[dir="rtl"] .kicker,
+[dir="rtl"] .number,
+[dir="rtl"] .btn,
+[dir="rtl"] em,
+[dir="rtl"] i,
+[dir="rtl"] strong {
+  font-family:"Vazirmatn",var(--sans)!important;
+}
+[dir="rtl"] em,
+[dir="rtl"] i,
+[dir="rtl"] h1 em,
+[dir="rtl"] h2 em,
+[dir="rtl"] h3 em,
+[dir="rtl"] .quote em {
+  font-style:normal!important;
+  font-weight:900!important;
+  letter-spacing:-.025em;
+  display:inline-block;
+  transform:skewX(-2deg);
+}
+[dir="rtl"] h1 em,
+[dir="rtl"] h2 em {
+  line-height:1.02;
+}
+
+/* Light theme */
+html[data-theme="light"]{
+  --bg:#f4f4f1;
+  --bg2:#ffffff;
+  --panel:rgba(10,10,12,.045);
+  --panel-strong:rgba(10,10,12,.075);
+  --line:rgba(10,10,12,.12);
+  --line2:rgba(10,10,12,.18);
+  --text:#101014;
+  --muted:#5d5d67;
+  --soft:#29292f;
+  --shadow:0 30px 100px rgba(20,20,25,.14);
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(900px 500px at 15% -5%,rgba(120,150,20,.14),transparent 65%),
+    radial-gradient(900px 600px at 90% 8%,rgba(60,150,110,.09),transparent 60%),
+    var(--bg);
+}
+html[data-theme="light"] .nav{background:rgba(250,250,247,.78)}
+html[data-theme="light"] .navlinks a:hover,
+html[data-theme="light"] .lang button:hover{background:rgba(10,10,12,.055)}
+html[data-theme="light"] .btn.secondary{background:rgba(10,10,12,.045)}
+html[data-theme="light"] .theme-toggle{background:rgba(10,10,12,.055)}
+html[data-theme="light"] .theme-moon{display:none}
+html:not([data-theme="light"]) .theme-sun{display:none}
+.theme-toggle{
+  width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);
+  border-radius:50%;background:rgba(255,255,255,.045);color:var(--text);cursor:pointer;
+  transition:transform .25s,background .25s,border-color .25s;line-height:1;font-size:1.05rem;
+}
+.theme-toggle:hover{transform:rotate(10deg) scale(1.04);background:rgba(255,255,255,.08)}
+</style>
+<link rel="icon" type="image/png" href="assets/favicon.jpg">
+<link rel="apple-touch-icon" href="assets/favicon.jpg">
+</head>
+
+<body>
+<noscript><style>.reveal{opacity:1!important;visibility:visible!important;transform:none!important}</style></noscript>
+<div class="progress" id="progress"></div>
+
+<nav class="nav" aria-label="Primary">
+  <a class="brand" href="#top" aria-label="Kaelovun home"><img class="brand-logo" src="assets/icons/icon-green.ico" alt="Kaelovun logo"><span>KA ELOVUN</span></a>
+  <div class="navlinks">
+    <a href="#philosophy" data-i18n="nav.philosophy">Philosophy</a>
+    <a href="#pipeline" data-i18n="nav.pipeline">Pipeline</a>
+    <a href="#freedom" data-i18n="nav.freedom">Freedom</a>
+    <a href="https://github.com/mh3nj/kaelovun" target="_blank" rel="noopener">GitHub ↗</a>
+    <div class="lang" aria-label="Language">
+      <button data-lang="en" class="active">EN</button>
+      <button data-lang="fa">فا</button>
+      <button data-lang="de">DE</button>
+    </div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+      <span class="theme-sun" aria-hidden="true">☼</span>
+      <span class="theme-moon" aria-hidden="true">◐</span>
+    </button>
+  </div>
+</nav>
+
+<main id="top">
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="reveal">
+      <div class="kicker"><i></i><span data-i18n="hero.kicker">Universal Creative Asset Engine</span></div>
+      <h1 data-i18n-html="hero.title">Make <em>creative</em> assets last.</h1>
+      <p class="hero-copy" data-i18n="hero.copy">
+        Kaelovun turns files, folders, and archives into safely processed, preview-rich, verified creative packages ,  while preserving the things it doesn't understand.
+      </p>
+      <div class="hero-actions">
+        <a class="btn primary" href="#how" data-i18n="hero.cta">See how it works ↓</a>
+        <a class="btn secondary" href="https://github.com/mh3nj/kaelovun" target="_blank" rel="noopener" data-i18n="hero.github">View on GitHub ↗</a>
+      </div>
+    </div>
+
+    <div class="hero-media reveal">
+      <img loading="eager" src="assets/kaelovun-app.png" alt="Kaelovun desktop application">
+      <div class="hero-orbit" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>PSD</span><b>✦</b><span>AI</span><b>✦</b><span>INDD</span><b>✦</b><span>AFFINITY</span><b>✦</b><span>ZIP / RAR / 7Z</span><b>✦</b><span>AVIF</span><b>✦</b><span>RAR5</span><b>✦</b>
+    <span>PSD</span><b>✦</b><span>AI</span><b>✦</b><span>INDD</span><b>✦</b><span>AFFINITY</span><b>✦</b><span>ZIP / RAR / 7Z</span><b>✦</b><span>AVIF</span><b>✦</b><span>RAR5</span><b>✦</b>
+  </div>
+</div>
+
+<section class="section" id="philosophy">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="philosophy.eyebrow">The principle</div><h2 data-i18n-html="philosophy.title">Understand what you can.<br><em>Preserve what you cannot.</em></h2></div>
+      <p class="lead" data-i18n="philosophy.lead">Kaelovun is built around one unusually strict rule: processing should never become an excuse for data loss.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card span-7 reveal">
+        <div class="number">01 / PRESERVATION</div>
+        <div class="bigword" data-i18n-html="cards.preserve.title">Nothing gets <em>casually</em> thrown away.</div>
+        <p data-i18n="cards.preserve.copy">Licenses, documentation, fonts, references, unknown files, and anything Kaelovun cannot safely transform stay in the package.</p>
+        <div class="feature-list">
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.preserve.a">Conservative classification</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.preserve.b">Original hierarchy retained</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.preserve.c">Unknown formats are preserved</span></div>
+        </div>
+      </article>
+
+      <article class="card span-5 reveal">
+        <div class="number">02 / AUTOMATION</div>
+        <h3 data-i18n="cards.auto.title">Give it a folder. Kaelovun takes it from there.</h3>
+        <p data-i18n="cards.auto.copy">No “PSD mode”. No “archive mode”. Give it a file, folder, or archive and Kaelovun detects the situation, walks the structure, and chooses the right processing path.</p>
+        <div class="feature-list" style="margin-top:25px">
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.auto.a">Files and folders</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.auto.b">Archives and nested archives</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="cards.auto.c">Automatic format detection</span></div>
+        </div>
+      </article>
+
+      <article class="card span-5 reveal">
+        <div class="number">03 / SAFETY</div>
+        <h3 data-i18n="cards.safe.title">The original stays sacred.</h3>
+        <p data-i18n="cards.safe.copy">Work happens in an isolated workspace. Verification comes before cleanup. Failure means preservation, not destruction.</p>
+      </article>
+
+      <article class="card span-7 reveal">
+        <div class="number">04 / ARCHIVAL</div>
+        <h3 data-i18n="cards.archive.title">A package, not a pile of files.</h3>
+        <p data-i18n="cards.archive.copy">Kaelovun reconstructs the logical project structure and produces a verified RAR5 archive with high compression and solid storage.</p>
+        <div class="manifest" style="margin-top:25px">
+          <div class="manifest-row"><span>Path</span><span>Status</span><span>Behavior</span></div>
+          <div class="manifest-row"><span>SOURCE/logo.psd</span><span>TRANSFORM</span><span>Process + preview</span></div>
+          <div class="manifest-row"><span>LICENSE/LICENSE.pdf</span><span>PRESERVE</span><span>Keep untouched</span></div>
+          <div class="manifest-row"><span>REFERENCES/ref.jpg</span><span>PRESERVE</span><span>Keep untouched</span></div>
+          <div class="manifest-row"><span>unknown.xyz</span><span>PRESERVE</span><span>Keep untouched</span></div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="how.eyebrow">One input. One intelligent pipeline.</div><h2 data-i18n-html="how.title">From messy project folder to <em>verified archive.</em></h2></div>
+      <p class="lead" data-i18n="how.lead">The pipeline adapts to the thing you give it instead of asking you to understand the machinery underneath.</p>
+    </div>
+
+    <div class="flow reveal">
+      <div class="flow-box"><strong data-i18n="flow.input">Your input</strong><p data-i18n="flow.inputcopy">File · Folder · ZIP · RAR · 7z · tar · nested packages</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box"><strong data-i18n="flow.engine">Kaelovun</strong><p data-i18n="flow.enginecopy">Discover · classify · preview · transform · preserve · reconstruct</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-box"><strong data-i18n="flow.output">Verified output</strong><p data-i18n="flow.outputcopy">RAR5 · preserved structure · AVIF previews · integrity verified</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="pipeline">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow">09 stages</div><h2 data-i18n-html="pipeline.title">The <em>pipeline.</em></h2></div>
+      <p class="lead" data-i18n="pipeline.lead">Every package moves through the same safety-oriented sequence.</p>
+    </div>
+    <div class="pipeline">
+      <div class="step reveal"><small>01</small><b data-i18n="steps.1">Discover</b><small data-i18n="steps.1s">Scan recursively</small></div>
+      <div class="step reveal"><small>02</small><b data-i18n="steps.2">Extract</b><small data-i18n="steps.2s">Isolated workspace</small></div>
+      <div class="step reveal"><small>03</small><b data-i18n="steps.3">Classify</b><small data-i18n="steps.3s">Transform or preserve</small></div>
+      <div class="step reveal"><small>04</small><b data-i18n="steps.4">preview</b><small data-i18n="steps.4s">AVIF + thumbnail</small></div>
+      <div class="step reveal"><small>05</small><b data-i18n="steps.5">Process</b><small data-i18n="steps.5s">Creative files</small></div>
+      <div class="step reveal"><small>06</small><b data-i18n="steps.6">Reconstruct</b><small data-i18n="steps.6s">Keep hierarchy</small></div>
+      <div class="step reveal"><small>07</small><b data-i18n="steps.7">Archive</b><small data-i18n="steps.7s">RAR5 · solid compression</small></div>
+      <div class="step reveal"><small>08</small><b data-i18n="steps.8">Verify</b><small data-i18n="steps.8s">Integrity + contents</small></div>
+      <div class="step reveal"><small>09</small><b data-i18n="steps.9">Cleanup</b><small data-i18n="steps.9s">Only after success</small></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="architecture">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="architecture.eyebrow">Independent by design</div><h2 data-i18n-html="architecture.title">Not a plugin.<br><em>A complete engine.</em></h2></div>
+      <p class="lead" data-i18n="architecture.lead">Kaelovun stands on its own. Any application can consume what it produces ,  Evoury included.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card span-7 reveal">
+        <div class="number">KAELOVUN / CORE</div>
+        <h3 data-i18n="kaelovun.title">Universal in. Verified out.</h3>
+        <p data-i18n="kaelovun.copy">Kaelovun discovers inputs, extracts archives, classifies formats, creates previews, transforms supported creative files, preserves everything else, reconstructs structure, creates RAR5 output, and verifies the result.</p>
+      </article>
+      <article class="card span-5 reveal">
+        <div class="number">CONSUMER-AGNOSTIC</div>
+        <h3 data-i18n="evoury.title">Use it anywhere.</h3>
+        <p data-i18n="evoury.copy">The output is useful by itself. A DAM, asset browser, backup workflow, mockup system, archive library, or another tool can consume the resulting package and previews.</p>
+      </article>
+    </div>
+
+    <div class="quote reveal" style="margin-top:15px">
+      <p data-i18n-html="architecture.quote">Evoury can use Kaelovun.<br><em>Kaelovun does not need Evoury.</em></p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="freedom">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="freedom.eyebrow">Set it up the way you work.</div><h2 data-i18n-html="freedom.title">The settings are there for a reason.<br><em>They give you control.</em></h2></div>
+      <p class="lead" data-i18n="freedom.lead">Kaelovun gives you control over the output without forcing you into a fixed preset.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card span-5 reveal">
+        <div class="number">PREVIEW CONTROL</div>
+        <h3 data-i18n="freedom.preview.title">Choose exactly what your previews are.</h3>
+        <p data-i18n="freedom.preview.copy">Select the image format for the full preview and independently select the format for the thumbnail. Set their maximum width and height, then tune quality and encoding speed.</p>
+        <div class="feature-list" style="margin-top:25px">
+          <div class="feature"><span class="dot"></span><span data-i18n="freedom.preview.a">Independent preview + thumbnail formats</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="freedom.preview.b">Independent dimensions</span></div>
+          <div class="feature"><span class="dot"></span><span data-i18n="freedom.preview.c">Quality and speed controls</span></div>
+        </div>
+      </article>
+
+      <article class="card span-7 reveal">
+        <div class="number">NAMING / MOCKUPS</div>
+        <h3 data-i18n="freedom.naming.title">Use automatic naming or name things yourself.</h3>
+        <p data-i18n="freedom.naming.copy">Automation derives the preview and final archive naming from the source asset. Manual mode lets a human provide the name ,  ideal when a package is being prepared for a mockup, presentation, client handoff, or a deliberately curated library.</p>
+        <div class="manifest" style="margin-top:25px">
+          <div class="manifest-row"><span>automation</span><span>source name</span><span>hands-free</span></div>
+          <div class="manifest-row"><span>manual</span><span>human name</span><span>curated output</span></div>
+        </div>
+      </article>
+
+      <article class="card span-12 reveal">
+        <div class="media" style="margin-top:0">
+          <img loading="lazy" data-src="assets/kaelovun-settings.png" alt="Kaelovun settings interface">
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="formats.eyebrow">Built for creative work</div><h2 data-i18n-html="formats.title">Understands the editable.<br><em>Respects the rest.</em></h2></div>
+      <p class="lead" data-i18n="formats.lead">Kaelovun is format-aware without becoming format-dependent: supported creative files can be transformed, while everything else follows a conservative preservation path.</p>
+    </div>
+
+    <div class="bento">
+      <article class="card span-4 reveal"><h3>Adobe</h3><p>PSD · PSB · AI · EPS · INDD · INDT</p></article>
+      <article class="card span-4 reveal"><h3>Affinity</h3><p>AFPHOTO · AFDESIGN · AFPUB</p></article>
+      <article class="card span-4 reveal"><h3>Preserved</h3><p>PDF · fonts · images · SVG · docs · unknown files</p></article>
+      <article class="card span-12 reveal">
+        <div class="number">CONTAINERS</div>
+        <h3>ZIP · RAR · 7Z · TAR · TAR.GZ · TAR.BZ2 · TAR.XZ</h3>
+        <p data-i18n="formats.archivecopy">Archives are inspected in controlled مworkspaces, with configurable nesting limits and protections against path traversal, symlink escapes and archive bombs.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="quote reveal">
+      <p data-i18n-html="quote">Creative work is fragile.<br><em>The archive shouldn't be.</em></p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head reveal">
+      <div><div class="eyebrow" data-i18n="faq.eyebrow">Questions</div><h2 data-i18n-html="faq.title">A few <em>important</em> details.</h2></div>
+    </div>
+    <div class="reveal">
+      <details><summary data-i18n="faq.q1">Does Kaelovun modify my original files?</summary><p data-i18n="faq.a1">The intended pipeline works in an isolated workspace and only permits cleanup after successful verification. Originals are kept intact.</p></details>
+      <details><summary data-i18n="faq.q2">What happens to files Kaelovun doesn't understand?</summary><p data-i18n="faq.a2">They are preserved. Kaelovun follows a conservative rule: uncertainty is a reason to keep, not delete.</p></details>
+      <details><summary data-i18n="faq.q3">Can it process a complete project folder?</summary><p data-i18n="faq.a3">Yes. A directory is treated as an asset package, recursively inspected and reconstructed while preserving its meaningful hierarchy.</p></details>
+      <details><summary data-i18n="faq.q4">Can it process an archive?</summary><p data-i18n="faq.a4">Yes. Supported archives are extracted into controlled مworkspaces, inspected, processed, reconstructed and emitted as verified RAR5 packages.</p></details>
+      <details><summary data-i18n="faq.q5">Is Kaelovun tied to Evoury?</summary><p data-i18n="faq.a5">No. Kaelovun is standalone and consumer-agnostic. Evoury can consume its outputs, but Kaelovun does not require Evoury to operate.</p></details>
+      <details><summary data-i18n="faq.q6">Can I control preview formats and dimensions?</summary><p data-i18n="faq.a6">Yes. preview format and thumbnail format are independently selectable, with independent maximum dimensions and quality controls.</p></details>
+      <details><summary data-i18n="faq.q7">Can I choose how assets are named?</summary><p data-i18n="faq.a7">Yes. Automation derives names from the source asset; manual mode asks for a human-defined name, which is useful for mockups and curated packages.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="card reveal" style="padding:clamp(30px,6vw,75px);text-align:center">
+      <div class="eyebrow" data-i18n="open.eyebrow">Open source · MIT</div>
+      <h2 style="margin-inline:auto" data-i18n-html="open.title">Bring your files.<br><em>Bring your weird ones too.</em></h2>
+      <p class="lead" style="margin:25px auto" data-i18n="open.copy">Kaelovun is built to handle the messy reality of creative archives without pretending every file is the same.</p>
+      <a class="btn primary" href="https://github.com/mh3nj/kaelovun" target="_blank" rel="noopener" data-i18n="open.cta">Explore the repository ↗</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="footer">
+  <div class="container footer-grid">
+    <div>
+      <div class="brand"><img class="brand-logo" src="assets/icons/icon-green.ico" alt="Kaelovun logo"><span>KA ELOVUN</span></div>
+      <div class="mini" style="margin-top:10px" data-i18n="footer.tag">Universal Creative Asset Processing & Preservation Engine</div>
+    </div>
+    <div style="text-align:right">
+      <div class="mini" style="margin-bottom:8px">
+        <a href="https://mh3n.com" target="_blank" rel="noopener">mh3n.com</a>
+        &nbsp;·&nbsp;
+        <a href="https://dahgan.com" target="_blank" rel="noopener">dahgan.com</a>
+        &nbsp;·&nbsp;
+        <a href="https://parsegan.com" target="_blank" rel="noopener">parsegan.com</a>
+      </div>
+      <div class="mini">© <span id="year"></span> mh3nj · MIT License · <a href="https://github.com/mh3nj/kaelovun">GitHub ↗</a></div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/ScrollToPlugin.min.js"></script>
+<script>
+/* =========================================================
+   KAELOVUN ,  INLINE INTERACTION / I18N / LAZY MEDIA
+   ========================================================= */
+
+const I18N = {
+  en:{
+    "nav.philosophy":"Philosophy","nav.pipeline":"Pipeline","nav.freedom":"Freedom",
+    "hero.kicker":"Universal Creative Asset Processing and Preservation Engine",
+    "hero.title":"Make <em>creative</em> assets last.",
+    "hero.copy":"Kaelovun turns files, folders, and archives into safely processed, preview-rich, verified creative packages ,  while preserving what it cannot safely transform.",
+    "hero.cta":"See how it works ↓","hero.github":"View on GitHub ↗",
+    "philosophy.eyebrow":"The principle","philosophy.title":"Understand what you can.<br><em>Preserve what you cannot.</em>",
+    "philosophy.lead":"Kaelovun is built around one unusually strict rule: processing should never become an excuse for data loss.",
+    "cards.preserve.title":"Nothing gets <em>casually</em> thrown away.","cards.preserve.copy":"Licenses, documentation, fonts, references, unknown files, and anything Kaelovun cannot safely transform stay in the package.",
+    "cards.preserve.a":"Conservative classification","cards.preserve.b":"Original hierarchy retained","cards.preserve.c":"Unknown formats are preserved",
+    "cards.auto.title":"Give it a folder. Kaelovun takes it from there.","cards.auto.copy":"No “PSD mode”. No “archive mode”. Give it a file, folder, or archive and let Kaelovun detect the situation and choose the right processing path.","cards.auto.a":"Files and folders","cards.auto.b":"Archives and nested archives","cards.auto.c":"Automatic format detection",
+    "cards.safe.title":"The original stays sacred.","cards.safe.copy":"Work happens in an isolated workspace. Verification comes before cleanup. Failure means preservation, not destruction.",
+    "cards.archive.title":"A package, not a pile of files.","cards.archive.copy":"Kaelovun reconstructs the logical project structure and produces a verified RAR5 archive with high compression and solid storage.",
+    "how.eyebrow":"One input. One intelligent pipeline.","how.title":"From messy project folder to <em>verified archive.</em>","how.lead":"The pipeline adapts to the thing you give it instead of asking you to understand the machinery underneath.",
+    "flow.input":"Your input","flow.inputcopy":"File · Folder · ZIP · RAR · 7z · tar · nested packages",
+    "flow.engine":"Kaelovun","flow.enginecopy":"Discover · classify · preview · transform · preserve · reconstruct",
+    "flow.output":"Verified output","flow.outputcopy":"RAR5 · preserved structure · AVIF previews · integrity verified",
+    "pipeline.title":"The <em>pipeline.</em>","pipeline.lead":"Every package moves through the same safety-oriented sequence.",
+    "steps.1":"Discover","steps.1s":"Scan recursively","steps.2":"Extract","steps.2s":"Isolated workspace","steps.3":"Classify","steps.3s":"Transform or preserve","steps.4":"Preview","steps.4s":"AVIF + تصویر بندانگشتی","steps.5":"Process","steps.5s":"Creative files","steps.6":"Reconstruct","steps.6s":"Keep hierarchy","steps.7":"Archive","steps.7s":"RAR5 · solid compression","steps.8":"Verify","steps.8s":"Integrity + contents","steps.9":"Cleanup","steps.9s":"Only after success",
+    "architecture.eyebrow":"Independent by design","architecture.title":"Not a plugin.<br><em>A complete engine.</em>","architecture.lead":"Kaelovun stands on its own. Any application can consume what it produces ,  Evoury included.",
+    "evoury.title":"Use it anywhere.","evoury.copy":"The output is useful by itself. A DAM, asset browser, backup workflow, mockup system, archive library, or another tool can consume the resulting package and previews.",
+    "kaelovun.title":"Universal in. Verified out.","kaelovun.copy":"Kaelovun discovers inputs, extracts archives, classifies formats, creates previews, transforms supported creative files, preserves everything else, reconstructs structure, creates RAR5 output, and verifies the result.",
+    "formats.eyebrow":"Built for creative work","formats.title":"Understands the editable.<br><em>Respects the rest.</em>","formats.lead":"Kaelovun is format-aware without becoming format-dependent: supported creative files can be transformed, while everything else follows a conservative preservation path.",
+    "formats.archivecopy":"Archives are inspected in controlled مworkspaces, with configurable nesting limits and protections against path traversal, symlink escapes and archive bombs.",
+    "quote":"Creative work is fragile.<br><em>The archive shouldn't be.</em>",
+    "faq.eyebrow":"Questions","faq.title":"A few <em>important</em> details.",
+    "faq.q1":"Does Kaelovun modify my original files?","faq.a1":"The intended pipeline works in an isolated workspace and only permits cleanup after successful verification. Originals are kept intact.",
+    "faq.q2":"What happens to files Kaelovun doesn't understand?","faq.a2":"They are preserved. Kaelovun follows a conservative rule: uncertainty is a reason to keep, not delete.",
+    "faq.q3":"Can it process a complete project folder?","faq.a3":"Yes. A directory is treated as an asset package, recursively inspected and reconstructed while preserving its meaningful hierarchy.",
+    "faq.q4":"Can it process an archive?","faq.a4":"Yes. Supported archives are extracted into controlled مworkspaces, inspected, processed, reconstructed and emitted as verified RAR5 packages.",
+    "faq.q5":"Is Kaelovun tied to Evoury?","faq.a5":"No. Kaelovun is standalone and consumer-agnostic. Evoury can consume its outputs, but Kaelovun does not require Evoury to operate.","faq.q6":"Can I control preview formats and dimensions?","faq.a6":"Yes. preview format and thumbnail format are independently selectable, with independent maximum dimensions and quality controls.","faq.q7":"Can I choose how assets are named?","faq.a7":"Yes. Automation derives names from the source asset; manual mode asks for a human-defined name, which is useful for mockups and curated packages.",
+    "open.eyebrow":"Open source · MIT","open.title":"Bring your files.<br><em>Bring your weird ones too.</em>","open.copy":"Kaelovun is built to handle the messy reality of creative archives without pretending every file is the same.","open.cta":"Explore the repository ↗",
+    "footer.tag":"Universal Creative Asset Processing & Preservation Engine · Built to work on its own"
+  },
+  fa:{
+    "nav.philosophy":"فلسفه","nav.pipeline":"فرآیند","nav.freedom":"آزادی عمل",
+    "hero.kicker":"موتور جهانی پردازش فایل‌های خلاقانه",
+    "hero.title":"فایل‌های <em>خلاقانه</em> را ماندگار کن.",
+    "hero.copy":"Kaelovun فایل‌ها، پوشه‌ها و آرشیوها را به پکیج‌های خلاقانه‌ی امن، قابل preview و تأییدشده تبدیل می‌کند ,  و هر چیزی را که نمی‌شناسد حفظ می‌کند.",
+    "hero.cta":"ببین چطور کار می‌کند ↓","hero.github":"مشاهده در GitHub ↗",
+    "philosophy.eyebrow":"اصل بنیادین","philosophy.title":"هر چیزی را که می‌توانی بفهم.<br><em>هر چیزی را که نمی‌توانی، حفظ کن.</em>",
+    "philosophy.lead":"Kaelovun بر یک قانون سخت‌گیرانه بنا شده: پردازش فایل هرگز نباید بهانه‌ای برای از دست رفتن داده باشد.",
+    "cards.preserve.title":"هیچ‌چیز <em>بی‌دلیل</em> دور ریخته نمی‌شود.","cards.preserve.copy":"لایسنس‌ها، مستندات، فونت‌ها، رفرنس‌ها، فایل‌های ناشناخته و هر چیزی که Kaelovun نتواند با اطمینان تغییر دهد، در پکیج باقی می‌ماند.",
+    "cards.preserve.a":"دسته‌بندی محافظه‌کارانه","cards.preserve.b":"حفظ ساختار اصلی","cards.preserve.c":"حفظ فرمت‌های ناشناخته",
+    "cards.auto.title":"رهایش کن؛ Kaelovun خودش می‌فهمد.","cards.auto.copy":"نه «حالت PSD»، نه «حالت Archive». فایل، پوشه یا پکیج را بده و اجازه بده پایپ‌لاین خودش وضعیت را تشخیص دهد.",
+    "cards.safe.title":"اصل فایل مقدس است.","cards.safe.copy":"پردازش در یک مworkspace ایزوله انجام می‌شود. ابتدا verification، سپس cleanup. خطا یعنی حفظ اطلاعات، نه نابودی آن.",
+    "cards.archive.title":"یک پکیج، نه یک مشت فایل.","cards.archive.copy":"Kaelovun ساختار منطقی پروژه را بازسازی می‌کند و یک RAR5 تأییدشده با فشرده‌سازی بالا و solid storage می‌سازد.",
+    "how.eyebrow":"یک ورودی. یک پایپ‌لاین هوشمند.","how.title":"از پوشه‌ی شلوغ پروژه تا <em>آرشیو تأییدشده.</em>","how.lead":"پایپ‌لاین خودش را با ورودی تو تطبیق می‌دهد، نه اینکه از تو بخواهد ماشین‌آلات پشت صحنه را بشناسی.",
+    "flow.input":"ورودی تو","flow.inputcopy":"فایل · پوشه · ZIP · RAR · 7z · tar · پکیج‌های تو در تو",
+    "flow.engine":"Kaelovun","flow.enginecopy":"کشف · دسته‌بندی · preview · پردازش · حفظ · بازسازی",
+    "flow.output":"خروجی تأییدشده","flow.outputcopy":"RAR5 · ساختار حفظ‌شده · preview AVIF · صحت‌سنجی",
+    "pipeline.title":"<em>پایپ‌لاین.</em>","pipeline.lead":"هر پکیج از یک مسیر یکسان و ایمن عبور می‌کند.",
+    "steps.1":"کشف","steps.1s":"اسکن بازگشتی","steps.2":"استخراج","steps.2s":"محیط کاری ایزوله","steps.3":"دسته‌بندی","steps.3s":"پردازش یا حفظ","steps.4":"Preview","steps.4s":"AVIF + تصویر بندانگشتی","steps.5":"پردازش","steps.5s":"فایل‌های خلاقانه","steps.6":"بازسازی","steps.6s":"حفظ ساختار","steps.7":"آرشیو","steps.7s":"RAR5 · solid compression","steps.8":"تأیید","steps.8s":"صحت + محتوا","steps.9":"Cleanup","steps.9s":"فقط بعد از موفقیت",
+    "freedom.eyebrow":"کنترل کامل","freedom.title":"تنظیمات فقط ظاهر نیستند.<br><em>اصل ماجرا هستند.</em>","freedom.lead":"Kaelovun به تو آزادی کامل برای تعریف خروجی می‌دهد؛ بدون اینکه مجبور باشی از یک preset ثابت استفاده کنی.","freedom.preview.title":"preview را دقیقاً همان‌طور که می‌خواهی تعریف کن.","freedom.preview.copy":"فرمت تصویر preview و thumbnail را جداگانه انتخاب کن، ابعاد هرکدام را مستقل تعیین کن و کیفیت و سرعت encoding را کنترل کن.","freedom.preview.a":"فرمت مستقل برای preview و thumbnail","freedom.preview.b":"ابعاد مستقل","freedom.preview.c":"کنترل کیفیت و سرعت","freedom.naming.title":"هر وقت خواستی automation؛ هر وقت لازم بود نام‌گذاری انسانی.","freedom.naming.copy":"در حالت automation، نام preview و آرشیو از نام فایل یا پکیج اصلی گرفته می‌شود. در حالت manual، انسان نام را تعیین می‌کند؛ عالی برای mockup، ارائه، تحویل به مشتری و آرشیوهای curated.","architecture.eyebrow":"مستقل از ابتدا","architecture.title":"پلاگین نیست.<br><em>یک موتور کامل است.</em>","architecture.lead":"Kaelovun به‌تنهایی کار می‌کند. هر نرم‌افزاری می‌تواند خروجی آن را مصرف کند؛ Evoury هم یکی از آن‌هاست.",
+    "evoury.title":"هرجا که خواستی استفاده کن.","evoury.copy":"خروجی Kaelovun به‌تنهایی قابل استفاده است؛ از DAM و asset browser تا backup، mockup، آرشیو یا هر ابزار دیگری که پکیج و preview را مصرف کند.",
+    "kaelovun.title":"موتور.","kaelovun.copy":"بازرسی، دسته‌بندی، تبدیل فایل‌های خلاقانه، preview، پردازش پکیج، استخراج آرشیو، حفظ، ساخت RAR و verification.",
+    "formats.eyebrow":"ساخته‌شده برای کار خلاقانه","formats.title":"فایل قابل‌ویرایش را <em>می‌فهمد.</em><br>بقیه را <em>محترم می‌شمارد.</em>","formats.lead":"فرمت‌های پشتیبانی‌شده پردازش می‌شوند؛ هر چیز دیگر مسیر محافظه‌کارانه‌ی حفظ را طی می‌کند.",
+    "formats.archivecopy":"آرشیوها در مworkspace کنترل‌شده بررسی می‌شوند؛ با محدودیت عمق تو در تو و محافظت در برابر path traversal، فرار symlink و archive bomb.",
+    "quote":"کار خلاقانه شکننده است.<br><em>آرشیو نباید باشد.</em>",
+    "faq.eyebrow":"سؤال‌ها","faq.title":"چند نکته‌ی <em>مهم.</em>",
+    "faq.q1":"آیا Kaelovun فایل اصلی من را تغییر می‌دهد؟","faq.a1":"پایپ‌لاین در مworkspace ایزوله کار می‌کند و cleanup فقط بعد از verification موفق انجام می‌شود. فایل اصلی دست‌نخورده می‌ماند.",
+    "faq.q2":"با فایل‌هایی که Kaelovun نمی‌شناسد چه می‌شود؟","faq.a2":"حفظ می‌شوند. قانون Kaelovun ساده است: ابهام دلیل حفظ کردن است، نه حذف کردن.",
+    "faq.q3":"آیا یک پوشه‌ی کامل پروژه را پردازش می‌کند؟","faq.a3":"بله. پوشه به‌عنوان یک asset package دیده می‌شود، به‌صورت بازگشتی بررسی می‌شود و ساختار آن حفظ می‌گردد.",
+    "faq.q4":"آیا آرشیو را هم پردازش می‌کند؟","faq.a4":"بله. آرشیوهای پشتیبانی‌شده در مworkspace کنترل‌شده استخراج، بررسی، پردازش و دوباره به‌صورت RAR5 تأییدشده بسته‌بندی می‌شوند.",
+    "faq.q5":"آیا Kaelovun به Evoury وابسته است؟","faq.a5":"خیر. Kaelovun مستقل است. Evoury یکپارچه‌سازی طبیعی DAM و اولین مصرف‌کننده‌ی بزرگ آن است.",
+    "open.eyebrow":"متن‌باز · MIT","open.title":"فایل‌هایت را بیاور.<br><em>حتی عجیب‌ترین‌ها را.</em>","open.copy":"Kaelovun برای واقعیت شلوغ آرشیوهای خلاقانه ساخته شده، بدون اینکه وانمود کند همه‌ی فایل‌ها یکسان‌اند.","open.cta":"مشاهده‌ی مخزن ↗",
+    "footer.tag":"موتور جهانی پردازش و حفظ فایل‌های خلاقانه"
+  },
+  de:{
+    "nav.philosophy":"Prinzip","nav.pipeline":"Pipeline","nav.architecture":"Architektur",
+    "hero.kicker":"Universelle Creative-Asset-Engine",
+    "hero.title":"Kreative <em>Assets</em> bleiben.",
+    "hero.copy":"Kaelovun verwandelt Dateien, Ordner und Archive in sicher verarbeitete, mit Vorschauen versehene und geprüfte Creative-Pakete ,  und bewahrt, was es nicht versteht.",
+    "hero.cta":"So funktioniert es ↓","hero.github":"Auf GitHub ansehen ↗",
+    "philosophy.eyebrow":"Das Prinzip","philosophy.title":"Verstehe, was du kannst.<br><em>Bewahre, was du nicht kannst.</em>",
+    "philosophy.lead":"Kaelovun folgt einer ungewöhnlich strengen Regel: Verarbeitung darf niemals zur Begründung für Datenverlust werden.",
+    "cards.preserve.title":"Nichts wird <em>leichtfertig</em> weggeworfen.","cards.preserve.copy":"Lizenzen, Dokumentation, Schriften, Referenzen, unbekannte Dateien und alles, was Kaelovun nicht sicher verändern kann, bleibt im Paket.",
+    "cards.preserve.a":"Konservative Klassifizierung","cards.preserve.b":"Originale Struktur bleibt erhalten","cards.preserve.c":"Unbekannte Formate werden bewahrt",
+    "cards.auto.title":"Rein damit. Kaelovun erkennt es.","cards.auto.copy":"Kein „PSD-Modus“. Kein „Archiv-Modus“. Datei, Ordner oder Paket hinein ,  die Pipeline entscheidet automatisch.",
+    "cards.safe.title":"Das Original bleibt unantastbar.","cards.safe.copy":"Die Verarbeitung läuft in einem isolierten Workspace. Erst Prüfung, dann Cleanup. Ein Fehler bedeutet Erhalt, nicht Zerstörung.",
+    "cards.archive.title":"Ein Paket, kein Dateihaufen.","cards.archive.copy":"Kaelovun rekonstruiert die logische Projektstruktur und erstellt ein geprüftes RAR5-Archiv mit hoher Kompression und Solid-Storage.",
+    "how.eyebrow":"Eine Eingabe. Eine intelligente Pipeline.","how.title":"Vom chaotischen Projektordner zum <em>geprüften Archiv.</em>","how.lead":"Die Pipeline passt sich deiner Eingabe an, statt dich mit der Technik dahinter zu belasten.",
+    "flow.input":"Deine Eingabe","flow.inputcopy":"Datei · Ordner · ZIP · RAR · 7z · tar · verschachtelte Pakete",
+    "flow.engine":"Kaelovun","flow.enginecopy":"Entdecken · klassifizieren · Vorschau · verarbeiten · bewahren · rekonstruieren",
+    "flow.output":"Geprüfte Ausgabe","flow.outputcopy":"RAR5 · erhaltene Struktur · AVIF-Vorschauen · Integrität geprüft",
+    "pipeline.title":"Die <em>Pipeline.</em>","pipeline.lead":"Jedes Paket durchläuft dieselbe sicherheitsorientierte Abfolge.",
+    "steps.1":"Entdecken","steps.1s":"Rekursiv scannen","steps.2":"Extrahieren","steps.2s":"Isolierter Workspace","steps.3":"Klassifizieren","steps.3s":"Verarbeiten oder bewahren","steps.4":"Vorschau","steps.4s":"AVIF + Thumbnail","steps.5":"Verarbeiten","steps.5s":"Creative-Dateien","steps.6":"Rekonstruieren","steps.6s":"Struktur erhalten","steps.7":"Archivieren","steps.7s":"RAR5 · solid compression","steps.8":"Prüfen","steps.8s":"Integrität + Inhalt","steps.9":"Cleanup","steps.9s":"Erst nach Erfolg",
+    "freedom.eyebrow":"Deine Pipeline. Deine Regeln.","freedom.title":"Die Einstellungen sind keine Dekoration.<br><em>Sie sind der Kern.</em>","freedom.lead":"Kaelovun gibt dir vollständige Kontrolle über das Ergebnis, ohne dich an ein starres Preset zu binden.","freedom.preview.title":"Definiere deine previews selbst.","freedom.preview.copy":"Wähle das Format für die große Vorschau und unabhängig davon das Format für das Thumbnail. Lege Breite und Höhe fest und steuere Qualität sowie Encoding-Geschwindigkeit.","freedom.preview.a":"Unabhängige preview- und Thumbnail-Formate","freedom.preview.b":"Unabhängige Abmessungen","freedom.preview.c":"Qualitäts- und Geschwindigkeitskontrolle","freedom.naming.title":"Automation, wenn du sie willst. Menschliche Benennung, wenn sie zählt.","freedom.naming.copy":"Automation übernimmt den Namen des Quell-Assets für preview und Archiv. Im manuellen Modus bestimmt ein Mensch den Namen ,  ideal für Mockups, Präsentationen, Übergaben und kuratierte Archive.","architecture.eyebrow":"Unabhängig entwickelt","architecture.title":"Kein Plugin.<br><em>Eine vollständige Engine.</em>","architecture.lead":"Kaelovun funktioniert eigenständig. Jede Anwendung kann seine Ergebnisse nutzen ,  auch Evoury.",
+    "evoury.title":"Überall einsetzbar.","evoury.copy":"Die Ergebnisse sind eigenständig nutzbar ,  in DAMs, Asset-Browsern, Backups, Mockup-Workflows, Archiven oder jeder anderen Anwendung, die Pakete und previews konsumiert.",
+    "kaelovun.title":"Die Engine.","kaelovun.copy":"Inspektion, Klassifizierung, Creative-Transformation, Vorschau, Paketverarbeitung, Archivextraktion, Erhalt, RAR-Erstellung und Prüfung.",
+    "formats.eyebrow":"Für kreative Arbeit gebaut","formats.title":"Versteht das Editierbare.<br><em>Respektiert den Rest.</em>","formats.lead":"Unterstützte Creative-Formate können verarbeitet werden; alles andere folgt einem konservativen Erhaltungsweg.",
+    "formats.archivecopy":"Archive werden in kontrollierten Workspaces untersucht ,  mit konfigurierbarer Verschachtelungstiefe und Schutz vor Path Traversal, Symlink-Escapes und Archive Bombs.",
+    "quote":"Kreative Arbeit ist fragil.<br><em>Das Archiv sollte es nicht sein.</em>",
+    "faq.eyebrow":"Fragen","faq.title":"Ein paar <em>wichtige</em> Details.",
+    "faq.q1":"Verändert Kaelovun meine Originaldateien?","faq.a1":"Die vorgesehene Pipeline arbeitet in einem isolierten Workspace und erlaubt Cleanup erst nach erfolgreicher Prüfung. Originale bleiben erhalten.",
+    "faq.q2":"Was passiert mit Dateien, die Kaelovun nicht versteht?","faq.a2":"Sie werden bewahrt. Die Regel lautet: Unsicherheit ist ein Grund zum Behalten, nicht zum Löschen.",
+    "faq.q3":"Kann es einen kompletten Projektordner verarbeiten?","faq.a3":"Ja. Ein Ordner wird als Asset-Paket behandelt, rekursiv untersucht und unter Erhalt seiner sinnvollen Struktur rekonstruiert.",
+    "faq.q4":"Kann es ein Archiv verarbeiten?","faq.a4":"Ja. Unterstützte Archive werden in kontrollierte Workspaces extrahiert, untersucht, verarbeitet, rekonstruiert und als geprüftes RAR5-Paket ausgegeben.",
+    "faq.q5":"Ist Kaelovun an Evoury gebunden?","faq.a5":"Nein. Kaelovun ist eigenständig. Evoury ist die natürliche DAM-Integration und der erste große Abnehmer.",
+    "open.eyebrow":"Open Source · MIT","open.title":"Bring deine Dateien.<br><em>Auch die seltsamen.</em>","open.copy":"Kaelovun ist für die chaotische Realität kreativer Archive gebaut ,  ohne so zu tun, als wären alle Dateien gleich.","open.cta":"Repository erkunden ↗",
+    "footer.tag":"Universelle Creative-Asset-Processing- & Preservation-Engine"
+  }
+};
+
+/* Keep every visible control translated. No English fallback in Persian or German. */
+Object.assign(I18N.fa,{
+  "cards.auto.a":"فایل‌ها و پوشه‌ها",
+  "cards.auto.b":"آرشیوها و آرشیوهای تو در تو",
+  "cards.auto.c":"تشخیص خودکار فرمت",
+  "architecture.eyebrow":"از ابتدا مستقل ساخته شده",
+  "architecture.lead":"Kaelovun به‌تنهایی کار می‌کند. هر نرم‌افزاری می‌تواند خروجی آن را استفاده کند، از جمله Evoury.",
+  "evoury.title":"هرجا که خواستی استفاده کن.",
+  "evoury.copy":"خروجی Kaelovun به‌تنهایی قابل استفاده است. DAM، مرورگر دارایی، سیستم پشتیبان‌گیری، گردش کار موکاپ، کتابخانه آرشیو یا هر ابزار دیگری می‌تواند پکیج‌ها و preview‌های آن را استفاده کند.",
+  "kaelovun.title":"فایل‌ها را وارد کن. پکیج verification‌شده تحویل بگیر.",
+  "kaelovun.copy":"Kaelovun ورودی‌ها را پیدا می‌کند، آرشیوها را استخراج می‌کند، فرمت‌ها را تشخیص می‌دهد، preview می‌سازد، فایل‌های خلاقانه پشتیبانی‌شده را پردازش می‌کند، بقیه را حفظ می‌کند، ساختار را بازسازی می‌کند، RAR5 می‌سازد و نتیجه را verification می‌کند.",
+  "faq.q5":"آیا Kaelovun به Evoury وابسته است?",
+  "faq.a5":"خیر. Kaelovun مستقل است. Evoury می‌تواند از خروجی آن استفاده کند، اما Kaelovun برای اجرا به Evoury نیاز ندارد.",
+  "faq.q6":"آیا می‌توانم فرمت و اندازه preview‌ها را کنترل کنم?",
+  "faq.a6":"بله. فرمت preview و thumbnail جداگانه انتخاب می‌شوند و اندازه و کیفیت هرکدام نیز مستقل قابل تنظیم است.",
+  "faq.q7":"آیا می‌توانم نام فایل‌ها را خودم انتخاب کنم?",
+  "faq.a7":"بله. حالت خودکار از نام منبع استفاده می‌کند و حالت دستی اجازه می‌دهد نام را خودت وارد کنی؛ برای موکاپ و پکیج‌های مرتب بسیار مناسب است."
+});
+
+Object.assign(I18N.de,{
+  "nav.freedom":"Freiheit",
+  "cards.auto.a":"Dateien und Ordner",
+  "cards.auto.b":"Archive und verschachtelte Archive",
+  "cards.auto.c":"Automatische Formaterkennung",
+  "architecture.eyebrow":"Von Anfang an unabhängig",
+  "architecture.lead":"Kaelovun funktioniert eigenständig. Jede Anwendung kann seine Ergebnisse verwenden, auch Evoury.",
+  "evoury.title":"Überall einsetzbar.",
+  "evoury.copy":"Die Ergebnisse sind eigenständig nutzbar. DAMs, Asset-Browser, Backup-Workflows, Mockup-Systeme, Archive oder andere Anwendungen können die Pakete und previews verwenden.",
+  "kaelovun.title":"Dateien rein. Verifizierte Pakete raus.",
+  "kaelovun.copy":"Kaelovun erkennt Eingaben, extrahiert Archive, klassifiziert Formate, erzeugt previews, verarbeitet unterstützte Creative-Dateien, bewahrt alles andere, baut die Struktur wieder auf, erstellt RAR5 und verifiziert das Ergebnis.",
+  "faq.q5":"Ist Kaelovun an Evoury gebunden?",
+  "faq.a5":"Nein. Kaelovun ist eigenständig. Evoury kann seine Ergebnisse verwenden, benötigt Kaelovun aber nicht umgekehrt.",
+  "faq.q6":"Kann ich preview-Formate und Größen steuern?",
+  "faq.a6":"Ja. preview und Thumbnail werden getrennt konfiguriert, inklusive eigener Maximalgrößen und Qualitätsoptionen.",
+  "faq.q7":"Kann ich Asset-Namen selbst festlegen?",
+  "faq.a7":"Ja. Der Automatikmodus verwendet den Namen der Quelle. Im manuellen Modus kannst du den Namen selbst eingeben, etwa für Mockups und kuratierte Pakete."
+});
+
+
+/* Theme */
+const themeToggle=document.getElementById("themeToggle");
+const savedTheme=localStorage.getItem("kaelovun-theme");
+const preferredTheme=window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
+function setTheme(theme){
+  document.documentElement.dataset.theme=theme;
+  localStorage.setItem("kaelovun-theme",theme);
+  if(themeToggle){
+    const label=theme==="light"?"Switch to dark theme":"Switch to light theme";
+    themeToggle.setAttribute("aria-label",label);
+    themeToggle.setAttribute("title",label);
+  }
+}
+setTheme(savedTheme||preferredTheme);
+themeToggle&&themeToggle.addEventListener("click",()=>setTheme(document.documentElement.dataset.theme==="light"?"dark":"light"));
+
+const htmlKeys = new Set([
+  "hero.title","philosophy.title","cards.preserve.title","how.title","pipeline.title",
+  "architecture.title","formats.title","quote","faq.title","open.title"
+]);
+
+function setLanguage(lang){
+  const dict=I18N[lang]||I18N.en;
+  document.documentElement.lang=lang;
+  document.documentElement.dir=lang==="fa"?"rtl":"ltr";
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const key=el.dataset.i18n;
+    if(dict[key]!==undefined) el.textContent=dict[key]; else if(lang!=="en") el.textContent="";
+  });
+  document.querySelectorAll("[data-i18n-html]").forEach(el=>{
+    const key=el.dataset.i18nHtml;
+    if(dict[key]!==undefined) el.innerHTML=dict[key]; else if(lang!=="en") el.innerHTML="";
+  });
+  document.querySelectorAll(".lang button").forEach(b=>b.classList.toggle("active",b.dataset.lang===lang));
+  localStorage.setItem("kaelovun-lang",lang);
+}
+
+document.querySelectorAll(".lang button").forEach(b=>b.addEventListener("click",()=>setLanguage(b.dataset.lang)));
+
+const saved=localStorage.getItem("kaelovun-lang");
+setLanguage(saved && I18N[saved] ? saved : "en");
+
+const progress=document.getElementById("progress");
+function updateProgress(){
+  const h=document.documentElement.scrollHeight-window.innerHeight;
+  progress.style.width=(h>0?(window.scrollY/h)*100:0)+"%";
+}
+window.addEventListener("scroll",updateProgress,{passive:true});
+updateProgress();
+
+/* ---------------------------------------------------------
+   GSAP MOTION SYSTEM
+   ScrollTrigger handles viewport-aware reveals, staggered
+   entrances and subtle parallax without forcing scroll.
+   ScrollToPlugin gives anchor links a silky native-feeling
+   transition. Reduced-motion users get a clean static page.
+   --------------------------------------------------------- */
+
+(function initMotion(){
+  const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (!window.gsap || !window.ScrollTrigger || !window.ScrollToPlugin) {
+    // Graceful fallback: reveal ALL content if a CDN is unavailable.
+    document.querySelectorAll(".reveal, .hero .kicker, .hero h1, .hero .hero-copy, .hero .hero-actions, .hero-media, .hero-orbit").forEach(el => {
+      el.classList.add("visible");
+      el.style.opacity = "1";
+      el.style.visibility = "visible";
+      el.style.transform = "none";
+      el.style.filter = "none";
+    });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+  // Keep the first paint intentional instead of making the page pop in.
+  // Explicit gsap.set() calls prevent CSS reveal states from fighting
+  // the hero entrance timeline.
+  gsap.set(".nav", {autoAlpha:0, y:-24});
+  gsap.set(".hero .kicker", {autoAlpha:0, y:28});
+  gsap.set(".hero h1", {autoAlpha:0, y:55});
+  gsap.set(".hero .hero-copy", {autoAlpha:0, y:28});
+  gsap.set(".hero .hero-actions", {autoAlpha:0, y:20});
+  gsap.set(".hero-media", {autoAlpha:0, x:42, y:20, scale:.94, rotate:1.2});
+  gsap.set(".hero-orbit", {autoAlpha:0, scale:.72, rotation:-40});
+
+  const hero = gsap.timeline({defaults:{ease:"power4.out"}});
+
+  hero
+    .to(".nav", {
+      autoAlpha:1, y:0, duration:1.05, delay:.12
+    })
+    .to(".hero .kicker", {
+      autoAlpha:1, y:0, duration:.72
+    }, "-=.48")
+    .to(".hero h1", {
+      autoAlpha:1, y:0, duration:1.05
+    }, "-=.45")
+    .to(".hero .hero-copy", {
+      autoAlpha:1, y:0, duration:.8
+    }, "-=.68")
+    .to(".hero .hero-actions", {
+      autoAlpha:1, y:0, duration:.7
+    }, "-=.52")
+    .to(".hero-media", {
+      autoAlpha:1, x:0, y:0, scale:1, rotate:0, duration:1.2,
+      ease:"power3.out"
+    }, "-=.9")
+    .to(".hero-orbit", {
+      autoAlpha:1, scale:1, rotation:0, duration:1.35,
+      ease:"expo.out"
+    }, "-=1.0");
+
+  if (prefersReduced) {
+    hero.progress(1);
+    gsap.set(".hero-orbit", {rotation:0, scale:1, autoAlpha:1});
+    gsap.set(".hero-media", {x:0, y:0, scale:1, rotate:0, autoAlpha:1});
+  } else {
+    // Gentle ambient life in the hero.
+    gsap.to(".hero-orbit", {
+      rotation:"+=18",
+      scale:1.035,
+      duration:9,
+      repeat:-1,
+      yoyo:true,
+      ease:"sine.inOut"
+    });
+    gsap.to(".hero-media", {
+      y:-7,
+      duration:4.8,
+      repeat:-1,
+      yoyo:true,
+      ease:"sine.inOut"
+    });
+  }
+
+  // General scroll reveals: every element enters with a small,
+  // deliberate delay based on its position in the group.
+  gsap.utils.toArray(".reveal").forEach((el, i) => {
+    if (el.closest(".hero")) return;
+
+    const siblings = [...el.parentElement.children].filter(x => x.classList.contains("reveal"));
+    const index = Math.max(0, siblings.indexOf(el));
+    const delay = Math.min(index * 0.075, 0.34);
+
+    gsap.fromTo(el,
+      {
+        autoAlpha:0,
+        y:34,
+        scale:.985,
+        filter:"blur(5px)"
+      },
+      {
+        autoAlpha:1,
+        y:0,
+        scale:1,
+        filter:"blur(0px)",
+        duration:.92,
+        delay,
+        ease:"power3.out",
+        overwrite:"auto",
+        scrollTrigger:{
+          trigger:el,
+          start:"top 84%",
+          once:true,
+          fastScrollEnd:true
+        }
+      }
+    );
+  });
+
+  // Pipeline: a more tactile stagger as the nine stages arrive.
+  gsap.from(".pipeline .step", {
+    autoAlpha:0,
+    y:42,
+    scale:.94,
+    duration:.72,
+    stagger:.075,
+    ease:"power3.out",
+    scrollTrigger:{
+      trigger:".pipeline",
+      start:"top 78%",
+      once:true
+    }
+  });
+
+  // Subtle scroll-linked depth. No aggressive parallax.
+  if (!prefersReduced) {
+    gsap.utils.toArray(".section-head").forEach(head => {
+      gsap.to(head, {
+        y:-18,
+        ease:"none",
+        scrollTrigger:{
+          trigger:head,
+          start:"top bottom",
+          end:"bottom top",
+          scrub:1.2
+        }
+      });
+    });
+
+    gsap.utils.toArray(".media:not(.hero-media)").forEach(media => {
+      gsap.to(media, {
+        y:-10,
+        scale:1.012,
+        ease:"none",
+        scrollTrigger:{
+          trigger:media,
+          start:"top bottom",
+          end:"bottom top",
+          scrub:1.5
+        }
+      });
+    });
+
+    gsap.utils.toArray(".quote").forEach(q => {
+      gsap.fromTo(q,
+        {scale:.96, y:30},
+        {
+          scale:1, y:-5,
+          ease:"none",
+          scrollTrigger:{
+            trigger:q,
+            start:"top 88%",
+            end:"center 48%",
+            scrub:1.2
+          }
+        }
+      );
+    });
+  }
+
+  // Smooth anchor navigation using GSAP's ScrollToPlugin.
+  document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener("click", e => {
+      const id = link.getAttribute("href");
+      const target = document.querySelector(id);
+      if (!target) return;
+
+      e.preventDefault();
+
+      gsap.to(window, {
+        duration: prefersReduced ? .01 : 1.15,
+        scrollTo:{
+          y:target,
+          offsetY:78,
+          autoKill:true
+        },
+        ease:"power3.inOut"
+      });
+    });
+  });
+
+  // Refresh after fonts/images settle so trigger positions remain accurate.
+  window.addEventListener("load", () => {
+    setTimeout(() => ScrollTrigger.refresh(), 250);
+    setTimeout(() => ScrollTrigger.refresh(), 900);
+  });
+
+  // Respect dynamically changed motion preferences as much as possible.
+  window.addEventListener("resize", () => ScrollTrigger.refresh());
+})();
+
+/* ---------------------------------------------------------
+   LAZY MEDIA
+   The browser's native loading=lazy is complemented by this
+   observer because media paths are intentionally data-src
+   placeholders until you replace them.
+   --------------------------------------------------------- */
+const mediaObserver=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const img=e.target;
+    const src=img.dataset.src;
+    if(src && !src.startsWith("MEDIA_")){
+      img.src=src;
+      img.addEventListener("load",()=>{
+        img.classList.add("loaded");
+        if(window.ScrollTrigger) ScrollTrigger.refresh();
+      },{once:true});
+    }
+    mediaObserver.unobserve(img);
+  });
+},{rootMargin:"400px 0px"});
+
+document.querySelectorAll("img[data-src]").forEach(img=>mediaObserver.observe(img));
+
+document.getElementById("year").textContent=new Date().getFullYear();
+</script>
+</body>
+</html>
