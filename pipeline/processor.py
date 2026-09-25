@@ -199,14 +199,33 @@ class AssetProcessor:
             job.set_status(JobStatus.PROCESSING_PACKAGE)
             self.logger.info(f"Processing {len(transformable)} transformable files in package")
 
+            # Generate all previews first
             for i, asset_file in enumerate(transformable):
                 if not self.should_continue():
                     raise RuntimeError("Queue stopped during package processing.")
-
-                self.logger.info(f"Processing {asset_file.relative_path} ({i+1}/{len(transformable)})")
-
+                self.logger.info(f"Generating preview {i+1}/{len(transformable)}")
                 try:
                     self._generate_preview_for_file(asset_file, job)
+                except Exception as e:
+                    self.logger.error(f"Failed to generate preview for {asset_file.relative_path}: {e}")
+                    asset_file.error = str(e)
+
+            # Request name for the package before hiding layers
+            if job.is_archive:
+                # For archives, use the archive stem as default name
+                if not job.final_name:
+                    job.final_name = job.source_file.stem
+                self.logger.info(f"Archive name: {job.final_name}")
+            else:
+                # Request name from user
+                self._request_package_name(job, package)
+
+            # Now process all files (hide layers, save)
+            for i, asset_file in enumerate(transformable):
+                if not self.should_continue():
+                    raise RuntimeError("Queue stopped during package processing.")
+                self.logger.info(f"Processing {asset_file.relative_path} ({i+1}/{len(transformable)})")
+                try:
                     self._process_transformable_file(asset_file, job)
                 except Exception as e:
                     self.logger.error(f"Failed to process {asset_file.relative_path}: {e}")
@@ -214,6 +233,31 @@ class AssetProcessor:
 
         if job.is_archive:
             self._generate_contact_sheet(package, job)
+
+    def _request_package_name(self, job, package):
+        """Request a name for the package. CLI uses stdin, GUI uses NameRequest."""
+        if job.final_name:
+            return
+        transformable = package.get_transformable_files()
+        default_name = transformable[0].path.stem if transformable else package.name
+        if self.name_request.event and not self.name_request.event.is_set():
+            try:
+                self.name_request.preview = transformable[0].preview_path if transformable else None
+                name = self.name_request.wait()
+                if name:
+                    job.final_name = name
+                    return
+            except Exception:
+                pass
+        try:
+            name = input(f"Enter name for {default_name} [{default_name}]: ").strip()
+            if name:
+                job.final_name = name
+                return
+        except (EOFError, KeyboardInterrupt):
+            pass
+        job.final_name = default_name
+        self.logger.info(f"Package name: {job.final_name}")
 
     def _generate_preview_for_file(self, asset_file: AssetFile, job):
         """Generate preview for a transformable file."""

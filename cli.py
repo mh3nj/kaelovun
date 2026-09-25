@@ -64,6 +64,11 @@ Examples:
     )
 
     parser.add_argument(
+        "--name",
+        help="Name for the output archive (overrides interactive prompt)"
+    )
+
+    parser.add_argument(
         "--resume-failed",
         action="store_true",
         help="Resume incomplete jobs from last session"
@@ -192,7 +197,9 @@ def run_cli(args: argparse.Namespace) -> int:
         if not jobs:
             logger.warning("No processable assets found")
             return 0
-
+        if args.name:
+            for job in jobs:
+                job.final_name = args.name
         queue.add_jobs(jobs)
         logger.info(f"Queued {len(jobs)} package(s) from {input_path}")
 
