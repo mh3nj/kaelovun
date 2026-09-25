@@ -344,7 +344,7 @@ class AssetProcessor:
                 files_to_archive.append(asset_file.thumb_path)
 
         self.logger.info(f"Creating archive with {len(files_to_archive)} files")
-        self.archive.create_rar(files_to_archive, archive_path)
+        self.archive.create_rar(files_to_archive, archive_path, work_dir=package.root_path)
 
         job.archive_file = archive_path
         package.archive_path = archive_path

@@ -17,6 +17,7 @@ class MockConfig:
         self.SUPPORTED_SOURCE_EXTENSIONS = [".psd", ".ai"]
         self.SUPPORTED_AFFINITY_EXTENSIONS = [".afphoto", ".afdesign", ".afpub"]
         self.ENGINE = "adobe"
+        self.MAX_ARCHIVE_DEPTH = 2
 
     def scannable_extensions(self):
         exts = list(self.SUPPORTED_SOURCE_EXTENSIONS)
@@ -24,6 +25,12 @@ class MockConfig:
             for ext in self.SUPPORTED_AFFINITY_EXTENSIONS:
                 if ext not in exts:
                     exts.append(ext)
+        # Archive extensions always included (matches real Config)
+        archive_exts = ['.zip', '.rar', '.7z', '.tar', '.tar.gz', '.tgz',
+                         '.tar.bz2', '.tbz2', '.tar.xz', '.txz']
+        for ext in archive_exts:
+            if ext not in exts:
+                exts.append(ext)
         return exts
 
 
@@ -60,6 +67,23 @@ class TestAssetScanner:
             extensions = {job.source_file.suffix for job in jobs}
             assert ".psd" in extensions
             assert ".ai" in extensions
+
+    def test_scan_folder_finds_archives_regardless_of_extension(self):
+        """Archives must be discovered even if their extension isn't in SUPPORTED_SOURCE_EXTENSIONS."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            import zipfile
+            (tmpdir / "logo.psd").write_text("psd")
+            (tmpdir / "project.zip").write_bytes(b"")
+            with zipfile.ZipFile(tmpdir / "project.zip", 'w') as zf:
+                zf.writestr("logo.psd", "psd")
+            (tmpdir / "data.7z").write_bytes(b"")
+
+            jobs = self.scanner.scan_folder(tmpdir)
+
+            assert len(jobs) == 3
+            assert any(j.source_file.name == "project.zip" and j.is_archive for j in jobs)
+            assert any(j.source_file.name == "data.7z" and j.is_archive for j in jobs)
 
     def test_scan_folder_recursive(self):
         with tempfile.TemporaryDirectory() as tmpdir:

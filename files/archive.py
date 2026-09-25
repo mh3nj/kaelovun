@@ -7,6 +7,7 @@ Best compression (-m5), solid (-s), no comments.
 """
 
 from pathlib import Path
+import os
 import subprocess
 
 
@@ -30,11 +31,18 @@ class RarArchive:
             f"  {path}\n  {fallback}"
         )
 
-    def create_rar(self, files, output: Path) -> Path:
+    def create_rar(self, files, output: Path, work_dir: Path = None) -> Path:
         if not files:
             raise ValueError("No files to archive.")
         output = Path(output)
         rar = self._rar_exe()
+
+        # Determine common parent directory for relative paths
+        if work_dir is None:
+            abs_files = [f.absolute() for f in files]
+            work_dir = Path(os.path.commonpath(abs_files)) if abs_files else Path.cwd()
+        else:
+            work_dir = Path(work_dir).absolute()
 
         command = [
             str(rar),
@@ -42,16 +50,20 @@ class RarArchive:
             "-r",
             "-m5",
             "-s",
-            "-ep",
             str(output),
         ]
         for file in files:
-            command.append(str(file.absolute()))
+            try:
+                rel = file.absolute().relative_to(work_dir)
+            except ValueError:
+                rel = file.absolute()
+            command.append(str(rel))
 
         self.logger.info(f"Creating RAR: {output.name}")
         self.logger.info(f"  Files: {[f.name for f in files]}")
+        self.logger.info(f"  Work dir: {work_dir}")
 
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command, capture_output=True, text=True, cwd=work_dir)
 
         if result.returncode != 0:
             self.logger.error(f"Command: {' '.join(command)}")

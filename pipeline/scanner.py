@@ -29,15 +29,22 @@ class AssetScanner:
         for item in folder.rglob("*"):
             if not item.is_file():
                 continue
+            # Always discover archives regardless of extension filter
+            if self.classifier.extractor.is_archive(item):
+                job = Job(item)
+                job.is_archive = True
+                job.archive_metadata = self.classifier.classify(item)
+                existing = self.find_existing_preview(item)
+                if existing:
+                    job.existing_preview = existing
+                jobs.append(job)
+                continue
             extension = item.suffix.lower()
             if extension in wanted:
                 job = Job(item)
                 existing = self.find_existing_preview(item)
                 if existing:
                     job.existing_preview = existing
-                if self.classifier.extractor.is_archive(item):
-                    job.is_archive = True
-                    job.archive_metadata = self.classifier.classify(item)
                 jobs.append(job)
         self.logger.info(f"Found {len(jobs)} scannable files ({sorted(wanted)}).")
         return jobs
