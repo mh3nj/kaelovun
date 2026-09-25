@@ -21,13 +21,13 @@
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Photoshop-blueviolet?logo=adobephotoshop&logoColor=white" alt="Photoshop"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Illustrator-orange?logo=adobeillustrator&logoColor=white" alt="Illustrator"></a>
   <a href="docs/affinity-setup.md"><img src="https://img.shields.io/badge/Affinity-supported-68d9f0" alt="Affinity"></a>
-  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.4.0-brightgreen" alt="Release 1.4.0"></a>
+  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.5.0-brightgreen" alt="Release 1.5.0"></a>
   <a href="https://github.com/mh3nj/evoury"><img src="https://img.shields.io/badge/Evoury-DAM-ff69b4" alt="Evoury DAM"></a>
 </p>
 
 ---
 
-> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation.
+> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation. In v1.5.0, safe-copy model for all inputs and manifest-based archive verification were added.
 
 Kaelovun processes **any creative asset input** — individual files (PSD, AI, INDD, Affinity formats), directories, or archives (ZIP, RAR, 7z, tar, etc.) — automatically discovering, classifying, and processing them into verified RAR archives with AVIF previews.
 
@@ -49,13 +49,13 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 | # | Stage | Description |
 |---|-------|-------------|
 | 1 | **Discover** | Recursively scan input, classify every file |
-| 2 | **Extract** | Safely extract archives to isolated workspace (configurable depth limit) |
+| 2 | **Extract / Copy** | Archives extracted to isolated workspace; directories/files copied to safe workspace (configurable depth limit for archives) |
 | 3 | **Classify** | Transformable / Preservable / Container / License-Doc |
 | 4 | **Preview** | Generate AVIF previews + thumbnails for transformable assets |
 | 5 | **Process** | Hide layers, save transformable files (Photoshop/Illustrator/Affinity) |
 | 6 | **Reconstruct** | Preserve original directory structure in workspace |
 | 7 | **Archive** | Create best-compression RAR5 (solid, verified) |
-| 8 | **Verify** | Test archive integrity, confirm expected files exist |
+| 8 | **Verify** | Test archive integrity + manifest comparison (confirm all expected files exist) |
 | 9 | **Cleanup** | Only after successful verification — remove workspace, keep originals |
 
 ---
@@ -66,12 +66,14 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 - **Package Model** — Logical asset packages preserve directory hierarchy (`SOURCE/`, `EXPORT/`, `LICENSE/`, etc.)
 - **Processor Architecture** — Photoshop, Illustrator, InDesign, Affinity, Image, PDF, Archive, Preservation processors
 - **Conservative Preservation** — Unknown files, licenses, docs, fonts are always preserved
-- **Safe Workspace** — Temp extraction, verify-before-cleanup, crash recovery
+- **Safe Workspace (Safe-Copy Model)** — All inputs (files, directories, archives) copied to isolated workspace before processing; originals never modified
+- **Manifest Verification** — RAR contents verified against expected file manifest (not just integrity test)
+- **Configurable Preview Formats** — `PREVIEW_FORMAT` / `THUMB_FORMAT` settings (AVIF default, PNG/WebP/etc. supported)
 - **Nested Archive Safety** — Configurable depth limit (default 2), preserves beyond boundary
 - **Security** — Path traversal protection, symlink safety, archive bomb detection
 - **CLI + GUI** — `kaelovun-cli` for automation, Tkinter GUI for interactive use
 - **Session Persistence** — Resume interrupted jobs, recover from crashes
-- **Verified RAR5** — Best compression, solid archive, integrity tested
+- **Verified RAR5** — Best compression, solid archive, integrity + manifest tested
 
 ---
 
@@ -260,11 +262,13 @@ Prefer the in-app route: **Settings** writes to `data/settings.json` (gitignored
 | `MAX_ARCHIVE_DEPTH` | `2` | Maximum nested archive extraction depth |
 | `PREVIEW_WIDTH` | 2000 | Max preview width in pixels |
 | `PREVIEW_HEIGHT` | 2000 | Max preview height in pixels |
+| `PREVIEW_FORMAT` | `AVIF` | Preview output format (`AVIF`, `PNG`, `WEBP`, etc.) |
 | `THUMB_WIDTH` | 400 | Thumbnail width in pixels |
 | `THUMB_HEIGHT` | 400 | Thumbnail height in pixels |
+| `THUMB_FORMAT` | `AVIF` | Thumbnail output format |
 | `AVIF_QUALITY` | 90 | AVIF encode quality (0–100) |
 | `AVIF_SPEED` | 6 | AVIF encoding speed (0=slowest/best, 10=fastest) |
-| `THUMB_QUALITY` | 70 | Thumbnail AVIF quality |
+| `THUMB_QUALITY` | 70 | Thumbnail quality |
 | `MINIMUM_FREE_SPACE_GB` | 1 | Disk space safety threshold |
 | `ADOBE_STARTUP_WAIT` | 20 | Seconds to wait for Adobe to launch |
 | `ADOBE_RECOVERY_WAIT` | 20 | Seconds to wait after restarting Adobe |
@@ -274,6 +278,7 @@ Prefer the in-app route: **Settings** writes to `data/settings.json` (gitignored
 | `AFFINITY_STARTUP_WAIT` | 25 | Seconds to wait for Affinity to launch |
 | `AFFINITY_RECOVERY_WAIT` | 20 | Seconds to wait after restarting Affinity |
 | `AFFINITY_RESTART_EVERY` | 10 | Recycle self-launched Affinity every N files (3.2.1 can't close tabs; 0 = never) |
+| `NAMING_MODE` | `manual` | `manual` (prompt) or `automation` (auto-name) |
 | `THEME` | `dark` | Startup theme (`dark` or `light`) |
 
 ---
@@ -302,10 +307,10 @@ Kaelovun safely processes archives:
 1. **Extract** to isolated temporary workspace
 2. **Inspect** contents for nested archives (depth limited by `MAX_ARCHIVE_DEPTH`)
 3. **Classify** every file (transformable / preservable / container / license)
-4. **Process** transformable assets in-place
+4. **Process** transformable assets in workspace
 5. **Reconstruct** preserving original directory structure
 6. **Create** verified RAR5 archive
-7. **Verify** integrity before any cleanup
+7. **Verify** integrity + manifest comparison before any cleanup
 
 **Security protections:**
 - Path traversal (`../`, absolute paths)
@@ -400,8 +405,8 @@ cli.py                      CLI entry point (headless)
 
 **Highest priority: NEVER LOSE USER DATA.**
 
-- Original files are **never modified in place** — work happens in isolated workspace
-- Archive verification **must pass** before any cleanup
+- Original files are **never modified in place** — all inputs (files, directories, archives) copied to isolated workspace before any processing
+- Archive verification **must pass** (integrity + manifest) before any cleanup
 - Unknown/unrecognized files are **preserved**, not deleted
 - Licenses, EULAs, documentation are **conservatively detected and preserved**
 - Crash recovery: `Resume Failed` restores incomplete jobs from session

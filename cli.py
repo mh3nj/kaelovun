@@ -101,7 +101,7 @@ Examples:
     parser.add_argument(
         "--version",
         action="version",
-        version="Kaelovun 1.4.0"
+        version="Kaelovun 1.5.0"
     )
 
     return parser
