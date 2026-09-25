@@ -171,17 +171,31 @@ class AssetProcessor:
             job.package_files = [f.path for f in package.files]
 
         elif source.is_dir():
-            # Directory input
-            package = self.classifier.classify_package(source, source_type="directory")
-            package.workspace_dir = source
+            # Directory input - COPY to workspace first (safe-copy model)
+            job.set_status(JobStatus.EXTRACTING_ARCHIVE)
+            workspace_copy = self._workspace_root / source.name
+            shutil.copytree(source, workspace_copy)
+            self.logger.info(f"Copied directory to workspace: {workspace_copy}")
+
+            # Classify the copied contents
+            package = self.classifier.classify_package(
+                workspace_copy,
+                source_type="directory",
+                original_archive=None
+            )
+            package.workspace_dir = workspace_copy
             job.package_files = [f.path for f in package.files]
 
         else:
-            # Single file input
-            package = self.classifier.classify_package(source.parent, source_type="file")
+            # Single file input - copy to workspace
+            workspace_file = self._workspace_root / source.name
+            shutil.copy2(source, workspace_file)
+            self.logger.info(f"Copied file to workspace: {workspace_file}")
+
+            package = self.classifier.classify_package(workspace_file.parent, source_type="file")
             # Filter to just this file
-            package.files = [f for f in package.files if f.path == source]
-            package.workspace_dir = source.parent
+            package.files = [f for f in package.files if f.path == workspace_file]
+            package.workspace_dir = workspace_file.parent
             job.package_files = [f.path for f in package.files]
 
         job.workspace_dir = package.workspace_dir
@@ -235,20 +249,23 @@ class AssetProcessor:
             self._generate_contact_sheet(package, job)
 
     def _request_package_name(self, job, package):
-        """Request a name for the package. CLI uses stdin, GUI uses NameRequest."""
+        """Request a name for the package. Respects NAMING_MODE setting."""
         if job.final_name:
             return
         transformable = package.get_transformable_files()
         default_name = transformable[0].path.stem if transformable else package.name
-        if self.name_request.event and not self.name_request.event.is_set():
+        if self.name_request.event.is_set():
             try:
-                self.name_request.preview = transformable[0].preview_path if transformable else None
                 name = self.name_request.wait()
                 if name:
                     job.final_name = name
                     return
             except Exception:
                 pass
+        if getattr(self.config, "NAMING_MODE", "manual") == "automation":
+            job.final_name = default_name
+            self.logger.info(f"Package name (auto): {job.final_name}")
+            return
         try:
             name = input(f"Enter name for {default_name} [{default_name}]: ").strip()
             if name:
@@ -403,22 +420,30 @@ class AssetProcessor:
         else:
             archive_name = package.name
 
-        # Archive goes next to the original source
+        # Archive goes next to the original source (job.source_file is the original input)
         if job.is_archive and job.archive_metadata:
             archive_dir = job.source_file.parent
+        elif package.source_type == "directory":
+            archive_dir = job.source_file.parent
+        elif package.source_type == "file":
+            archive_dir = job.source_file.parent
         else:
-            archive_dir = package.root_path.parent if package.source_type == "directory" else package.root_path
+            archive_dir = package.root_path
 
         archive_path = archive_dir / f"{archive_name}.rar"
 
         # Collect all files to archive (preserving structure)
         files_to_archive = []
+        expected_manifest = []
         for asset_file in package.get_all_files():
             files_to_archive.append(asset_file.path)
+            expected_manifest.append(asset_file.relative_path.as_posix())
             if asset_file.preview_path and asset_file.preview_path.exists():
                 files_to_archive.append(asset_file.preview_path)
+                expected_manifest.append(asset_file.preview_path.relative_to(package.root_path).as_posix())
             if asset_file.thumb_path and asset_file.thumb_path.exists():
                 files_to_archive.append(asset_file.thumb_path)
+                expected_manifest.append(asset_file.thumb_path.relative_to(package.root_path).as_posix())
 
         self.logger.info(f"Creating archive with {len(files_to_archive)} files")
         self.archive.create_rar(files_to_archive, archive_path, work_dir=package.root_path)
@@ -426,9 +451,11 @@ class AssetProcessor:
         job.archive_file = archive_path
         package.archive_path = archive_path
         package.archive_created = True
+        # Store expected manifest on job for verification
+        job.expected_manifest = sorted(expected_manifest)
 
     def _verify_archive(self, job) -> bool:
-        """Verify the created archive."""
+        """Verify the created archive - both integrity and content manifest."""
         if not job.archive_file or not job.archive_file.exists():
             return False
 
@@ -436,7 +463,30 @@ class AssetProcessor:
         if not self.archive.test_archive(job.archive_file):
             return False
 
-        # Verify expected files are present (optional - RAR test covers this)
+        # Verify expected files are present via manifest comparison
+        if hasattr(job, 'expected_manifest') and job.expected_manifest:
+            actual_contents = self.archive.list_archive(job.archive_file)
+            actual_sorted = sorted(actual_contents)
+            expected_sorted = sorted(job.expected_manifest)
+
+            if actual_sorted != expected_sorted:
+                self.logger.error(f"Archive manifest mismatch!")
+                self.logger.error(f"  Expected ({len(expected_sorted)}): {expected_sorted}")
+                self.logger.error(f"  Actual ({len(actual_sorted)}): {actual_sorted}")
+
+                # Find missing and extra files
+                missing = set(expected_sorted) - set(actual_sorted)
+                extra = set(actual_sorted) - set(expected_sorted)
+                if missing:
+                    self.logger.error(f"  MISSING: {sorted(missing)}")
+                if extra:
+                    self.logger.error(f"  EXTRA: {sorted(extra)}")
+                return False
+
+            self.logger.info(f"  Manifest verified: {len(expected_sorted)} files match")
+        else:
+            self.logger.warning("No expected manifest available for verification")
+
         return True
 
     def _cleanup_workspace(self, package: AssetPackage, job):
@@ -444,7 +494,9 @@ class AssetProcessor:
         if job.is_archive:
             self.extractor.cleanup_all()
         elif package.workspace_dir and package.workspace_dir != package.root_path:
-            self.extractor.cleanup_all()
+            # For directory and file inputs, the workspace is a copy in _workspace_root
+            # Clean up the entire workspace root (which contains the copied package)
+            self._cleanup_workspace_root()
 
         # For directory/file inputs, the original files are NOT deleted
         # Only the loose files in workspace are cleaned up
