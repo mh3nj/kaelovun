@@ -25,6 +25,7 @@ class JobStatus(Enum):
     EXTRACTING_ARCHIVE = "extracting_archive"
     PROCESSING_PACKAGE = "processing_package"
     RECONSTRUCTING = "reconstructing"
+    GENERATING_PREVIEW = "generating_preview"
     DONE = "done"
     FAILED = "failed"
 

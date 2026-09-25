@@ -139,6 +139,12 @@ class ArchiveExtractor:
             for info in zf.infolist():
                 self._validate_zip_member(info, dest_dir)
 
+            # Check for encryption before attempting extraction
+            encrypted_files = [info for info in zf.infolist() if info.flag_bits & 0x1]
+            if encrypted_files:
+                self.logger.warning(f"Archive contains encrypted files, skipping extraction: {archive_path.name}")
+                raise RuntimeError(f"Archive is password-protected: {archive_path.name}")
+
             # Safe extraction
             zf.extractall(dest_dir)
             extracted = [
@@ -153,11 +159,18 @@ class ArchiveExtractor:
     def _extract_patool(self, archive_path: Path, dest_dir: Path) -> List[Path]:
         """Extract using patoolib (RAR, 7z, etc.)."""
         # patoolib handles its own validation
-        patoolib.extract_archive(
-            str(archive_path),
-            outdir=str(dest_dir),
-            verbosity=-1  # Quiet
-        )
+        try:
+            patoolib.extract_archive(
+                str(archive_path),
+                outdir=str(dest_dir),
+                verbosity=-1  # Quiet
+            )
+        except Exception as e:
+            error_msg = str(e).lower()
+            if "password" in error_msg or "encrypted" in error_msg:
+                self.logger.warning(f"Archive is password-protected, skipping: {archive_path.name}")
+                raise RuntimeError(f"Archive is password-protected: {archive_path.name}")
+            raise
 
         # Get list of extracted files
         extracted = []
@@ -302,11 +315,16 @@ class ArchiveClassifier:
 
         if self.extractor.is_archive(path):
             # Inspect to check for nested archives
-            contents = self.inspector.list_contents(path)
-            has_nested = any(
-                self.extractor.is_archive(Path(item['name']))
-                for item in contents
-            )
+            try:
+                contents = self.inspector.list_contents(path)
+                has_nested = any(
+                    self.extractor.is_archive(Path(item['name']))
+                    for item in contents
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to inspect archive {path.name}: {e}")
+                contents = []
+                has_nested = False
             return {
                 'type': 'archive',
                 'path': path,

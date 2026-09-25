@@ -158,17 +158,35 @@ class AssetProcessor:
         if job.is_archive:
             # Extract archive to workspace
             job.set_status(JobStatus.EXTRACTING_ARCHIVE)
-            extract_root, extracted_files = self.extractor.extract(source, self._workspace_root)
+            try:
+                extract_root, extracted_files = self.extractor.extract(source, self._workspace_root)
 
-            # Classify the extracted contents
-            package = self.classifier.classify_package(
-                extract_root,
-                source_type="archive",
-                original_archive=source
-            )
-            package.workspace_dir = extract_root
-            job.extracted_root = extract_root
-            job.package_files = [f.path for f in package.files]
+                # Classify the extracted contents
+                package = self.classifier.classify_package(
+                    extract_root,
+                    source_type="archive",
+                    original_archive=source
+                )
+                package.workspace_dir = extract_root
+                job.extracted_root = extract_root
+                job.package_files = [f.path for f in package.files]
+            except RuntimeError as e:
+                if "password" in str(e).lower() or "encrypted" in str(e).lower():
+                    self.logger.warning(f"Archive is password-protected, preserving as-is: {source.name}")
+                    # Create a package with just the archive file itself (preserve as-is)
+                    package = self.classifier.classify_package(
+                        source.parent,
+                        source_type="archive",
+                        original_archive=source
+                    )
+                    # Filter to just this archive file
+                    package.files = [f for f in package.files if f.path == source]
+                    package.workspace_dir = source.parent
+                    job.package_files = [f.path for f in package.files]
+                    job.workspace_dir = package.workspace_dir
+                    job.is_archive = False  # Treat as regular file for preservation
+                else:
+                    raise
 
         elif source.is_dir():
             # Directory input - COPY to workspace first (safe-copy model)
