@@ -19,7 +19,7 @@ import tempfile
 import shutil
 
 from pipeline.job import JobStatus
-from pipeline.asset_package import AssetPackage, PackageClassifier, FileCategory
+from pipeline.asset_package import AssetPackage, PackageClassifier, FileCategory, AssetFile
 from files.naming import NameRequest
 from files.filename import FilenameManager
 from files.cleanup import CleanupManager
@@ -158,30 +158,29 @@ class AssetProcessor:
         """Process all transformable files in the package."""
         transformable = package.get_transformable_files()
 
-        if not transformable:
+        if not transformable and not job.is_archive:
             self.logger.info("No transformable files in package, skipping preview/processing")
             return
 
-        job.set_status(JobStatus.PROCESSING_PACKAGE)
-        self.logger.info(f"Processing {len(transformable)} transformable files in package")
+        if transformable:
+            job.set_status(JobStatus.PROCESSING_PACKAGE)
+            self.logger.info(f"Processing {len(transformable)} transformable files in package")
 
-        for i, asset_file in enumerate(transformable):
-            if not self.should_continue():
-                raise RuntimeError("Queue stopped during package processing.")
+            for i, asset_file in enumerate(transformable):
+                if not self.should_continue():
+                    raise RuntimeError("Queue stopped during package processing.")
 
-            self.logger.info(f"Processing {asset_file.relative_path} ({i+1}/{len(transformable)})")
+                self.logger.info(f"Processing {asset_file.relative_path} ({i+1}/{len(transformable)})")
 
-            try:
-                # Generate preview for naming
-                self._generate_preview_for_file(asset_file, job)
+                try:
+                    self._generate_preview_for_file(asset_file, job)
+                    self._process_transformable_file(asset_file, job)
+                except Exception as e:
+                    self.logger.error(f"Failed to process {asset_file.relative_path}: {e}")
+                    asset_file.error = str(e)
 
-                # Process the file (hide layers, save)
-                self._process_transformable_file(asset_file, job)
-
-            except Exception as e:
-                self.logger.error(f"Failed to process {asset_file.relative_path}: {e}")
-                asset_file.error = str(e)
-                # Continue with other files - don't fail the whole package
+        if job.is_archive:
+            self._generate_contact_sheet(package, job)
 
     def _generate_preview_for_file(self, asset_file: AssetFile, job):
         """Generate preview for a transformable file."""
@@ -219,6 +218,40 @@ class AssetProcessor:
             png, avif_path
         )
         self.preview.delete_file_safe(png)
+
+    def _generate_contact_sheet(self, package: AssetPackage, job):
+        """Create a grid contact sheet from all preservable images in the package."""
+        if not self.preview:
+            return
+        images = [f for f in package.get_all_files()
+                  if f.category in (FileCategory.PRESERVABLE, FileCategory.LICENSE_DOC)
+                  and f.path.suffix.lower() in self.preview._image_extensions]
+        if len(images) < 2:
+            self.logger.info("Not enough images for contact sheet, skipping")
+            return
+
+        job.set_status(JobStatus.GENERATING_PREVIEW)
+        self.logger.info(f"Creating contact sheet with {len(images)} images")
+
+        sheet_path = package.workspace_dir / f"{package.name}_contact_sheet.png"
+        self.preview.create_contact_sheet([f.path for f in images], sheet_path, cols=4)
+
+        try:
+            avif_path = sheet_path.with_suffix(".avif")
+            self.preview.convert_to_avif(sheet_path, avif_path)
+            self.preview.delete_file_safe(sheet_path)
+
+            sheet_asset = AssetFile(
+                path=avif_path,
+                relative_path=Path(f"{package.name}_contact_sheet.avif"),
+                category=FileCategory.PRESERVABLE,
+                preview_path=avif_path,
+                thumb_path=avif_path.with_suffix(".thumb.avif")
+            )
+            package.add_file(sheet_asset)
+            self.logger.info(f"Contact sheet preview created: {avif_path.name}")
+        except Exception as e:
+            self.logger.warning(f"Failed to create contact sheet AVIF: {e}")
 
     def _process_transformable_file(self, asset_file: AssetFile, job):
         """Process a single transformable file (hide layers, save)."""
