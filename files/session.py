@@ -178,11 +178,11 @@ class AssetStateManager:
         Return files that need processing.
 
         A file needs processing if:
-        - It's not in the state file (new folder)
-        - Its status is "interrupted" or "failed"
-        - Its corresponding .rar archive doesn't exist on disk
+        - The folder was never processed before
+        - The folder was interrupted (any file pending)
+        - The state says the file was completed AND the .rar archive exists on disk
 
-        Returns list of (filename, Job) tuples for pending files.
+        Returns list of Job tuples for pending files.
         """
         state = self.load_state(folder)
         pending = []
@@ -191,6 +191,10 @@ class AssetStateManager:
         # Check for existing .rar archives in the folder
         for f in folder.rglob("*.rar"):
             existing_archives.add(f.name)
+
+        # If folder was completed and there are .rar files, skip all
+        if state["status"] == "completed" and existing_archives:
+            return []
 
         for item in scannable_files:
             filename = item.source_file.name

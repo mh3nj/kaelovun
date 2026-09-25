@@ -29,10 +29,12 @@ class AppSettings:
         "SUPPORTED_SOURCE_EXTENSIONS",
         "PREVIEW_WIDTH",
         "PREVIEW_HEIGHT",
+        "PREVIEW_FORMAT",
         "AVIF_QUALITY",
         "AVIF_SPEED",
         "THUMB_WIDTH",
         "THUMB_HEIGHT",
+        "THUMB_FORMAT",
         "THUMB_QUALITY",
         "MINIMUM_FREE_SPACE_GB",
         "ADOBE_STARTUP_WAIT",
@@ -41,6 +43,7 @@ class AppSettings:
         "MAX_RETRIES",
         "ARCHIVE_PROFILE",
         "THEME",
+        "NAMING_MODE",
     )
 
     def __init__(self, settings_file):
