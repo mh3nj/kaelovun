@@ -35,6 +35,11 @@ Thumbs.db
 data/
 *.log
 *.zip
+.kaelovun_state.json
+
+# Release artifacts
+release/
+Kaelovun_v1.4.0.zip
 
 # ── Temporary workspaces ────────────────────────────────
 tmp/
