@@ -21,13 +21,13 @@
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Photoshop-blueviolet?logo=adobephotoshop&logoColor=white" alt="Photoshop"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Illustrator-orange?logo=adobeillustrator&logoColor=white" alt="Illustrator"></a>
   <a href="docs/affinity-setup.md"><img src="https://img.shields.io/badge/Affinity-supported-68d9f0" alt="Affinity"></a>
-  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.6.2-brightgreen" alt="Release 1.6.2"></a>
+  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.7.0-brightgreen" alt="Release 1.7.0"></a>
   <a href="https://github.com/mh3nj/evoury"><img src="https://img.shields.io/badge/Evoury-DAM-ff69b4" alt="Evoury DAM"></a>
 </p>
 
 ---
 
-> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation. In v1.5.0, safe-copy model for all inputs and manifest-based archive verification were added. In v1.6.0, archives can be written as **RAR, 7z or ZIP** (or whichever of 7z/RAR is smaller), existing archives can be **converted between formats**, and archive handling got real safety limits and a much stricter verification step.
+> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation. In v1.5.0, safe-copy model for all inputs and manifest-based archive verification were added. In v1.6.0, archives can be written as **RAR, 7z or ZIP** (or whichever of 7z/RAR is smaller), existing archives can be **converted between formats**, and archive handling got real safety limits and a much stricter verification step. In v1.7.0, Kaelovun gets a **Windows installer**, ships the **34 mh3nj color themes**, and the Convert window's target, compression and original-file rows became read-only announcers backed by Settings.
 
 Kaelovun processes **any creative asset input** — individual files (PSD, AI, INDD, Affinity formats), directories, or archives (ZIP, RAR, 7z, tar, etc.) — automatically discovering, classifying, and processing them into verified archives (RAR, 7z or ZIP) with AVIF previews.
 
@@ -75,6 +75,8 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 - **Nested Archive Safety** — Configurable depth limit (default 2), preserves beyond boundary
 - **Security** — Path traversal protection, links never extracted, archive bomb limits (size, ratio, entry count) enforced before and during extraction
 - **CLI + GUI** — `kaelovun-cli` for automation, Tkinter GUI for interactive use
+- **34 themes** — Pick any of the mh3nj color themes (17 families, dark and light) in Settings > Appearance, or cycle through them with the theme button. The header logo flips to match
+- **Windows installer** — Per-user install with Start Menu shortcuts and a clean uninstall, no admin prompt. The portable zip still works the same way
 - **Session Persistence** — Resume interrupted jobs, recover from crashes
 - **Optional sidecar manifest** — `<archive>.kaelovun.json` next to each archive, a stable description for Evoury and other tools
 
@@ -138,7 +140,11 @@ copy config.example.py config.py
 
 You usually don't need to edit anything afterwards: Adobe and WinRAR paths are **auto-detected** from `C:\Program Files`. Only touch `config.py` if you want to force a specific Adobe version or override defaults. `config.py` is gitignored; only ever push `config.example.py`.
 
-### Prebuilt executable (recommended)
+### Windows installer (recommended)
+
+Download the latest `Kaelovun-Setup-X.Y.Z.exe` from the [Releases page](https://github.com/mh3nj/kaelovun/releases) and run it. It installs per user into `%LOCALAPPDATA%\Programs\Kaelovun` (no admin prompt), adds Start Menu shortcuts (the Desktop shortcut is optional in the wizard) and registers Kaelovun in Settings > Apps. Uninstall from Settings > Apps or from the Start Menu shortcut; uninstalling removes the app folder, including its `data` folder (settings, session and logs). No Python or dependencies required; everything is bundled.
+
+### Portable zip
 
 Download the latest `Kaelovun-vX.Y.Z.zip` from the [Releases page](https://github.com/mh3nj/kaelovun/releases). Extract the **entire** archive and run `Kaelovun/Kaelovun.exe`. No Python or dependencies required; everything is bundled.
 
@@ -192,7 +198,15 @@ pip install pyinstaller
 python -m PyInstaller Kaelovun.spec --noconfirm
 ```
 
-The runnable app will be at `dist/Kaelovun/Kaelovun.exe` (with `dist/Kaelovun/_internal/` next to it). It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files. Or run `scripts/build_release.bat`; it builds from the spec, verifies `_internal/python3*.dll` exists, and zips `dist/Kaelovun` to `Kaelovun-vX.Y.Z.zip` for you.
+The runnable app will be at `dist/Kaelovun/Kaelovun.exe` (with `dist/Kaelovun/_internal/` next to it). It includes all dependencies and the `scripts/` folder containing Adobe ExtendScript files. Or run `scripts/build_release.bat`; it builds from the spec, verifies `_internal/python3*.dll` exists, zips `dist/Kaelovun` to `Kaelovun-vX.Y.Z.zip` and builds the installer.
+
+To build only the installer from an existing PyInstaller output, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\build_installer.ps1
+```
+
+It reads the version from `cli.py` and produces `dist/Kaelovun-Setup-X.Y.Z.exe`. NSIS 3 is required (`makensis` on `PATH`); when it is not on `PATH`, the script falls back to Tauri's copy at `%LOCALAPPDATA%\tauri\NSIS\makensis.exe`. The script removes `dist/Kaelovun/_internal/data` first so local settings and logs never ship.
 
 > **Always build from the `.spec` file.** Running `pyinstaller main.py` regenerates the spec with no data files and silently drops the `scripts/` folder, which makes every job fail with "Missing JSX".
 

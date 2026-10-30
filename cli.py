@@ -19,7 +19,7 @@ from logger import Logger
 
 from files.archive_prefs import FORMATS, LEVELS, VERIFY_LEVELS, load_prefs
 
-VERSION = "1.6.2"
+VERSION = "1.7.0"
 
 
 def create_parser() -> argparse.ArgumentParser:

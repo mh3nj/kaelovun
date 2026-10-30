@@ -7,9 +7,10 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## Unreleased
+## 1.7.0 - 2026-10-30
 
 ### Added
+- **Windows installer.** `Kaelovun-Setup-1.7.0.exe` installs Kaelovun per user (no admin prompt) into `%LOCALAPPDATA%\Programs\Kaelovun`, adds Start Menu shortcuts and an entry in Settings > Apps, and uninstalls cleanly. It wraps the same PyInstaller build as the portable zip. Rebuild it with `scripts\build_installer.ps1` or `scripts\build_release.bat`.
 - A converted archive now inherits the source's previews: `Name.avif` and `Name.thumb.avif` are **copied** (never moved) next to the result, under the result's final name, so Evoury shows the preview right away. The originals stay untouched and nothing existing is ever overwritten.
 - **Convert Archives** has a new **Smallest** target: it builds 7z, ZIP and RAR all at Best compression, keeps whichever comes out smallest (a missing tool is skipped, not an error), and deletes the losers. Still respects "only keep a result that is smaller".
 - "Move the original to the Recycle Bin" now takes the original's `Name.avif` / `Name.thumb.avif` along, but only when nothing left next to the source would pair with them (if the result keeps the same name, the previews stay, since they are now the result's previews).
