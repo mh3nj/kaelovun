@@ -30,7 +30,7 @@ DICT_SIZES_MB = (16, 32, 64, 128, 256, 512, 1024)
 
 DEFAULT_PROFILE = {
     # What to build
-    "format": "rar",            # rar | 7z | zip | smallest (build 7z + RAR, keep the smaller)
+    "format": "rar",            # rar | 7z | zip | smallest (build 7z + ZIP + RAR, keep the smallest)
     "level": "best",            # fast | normal | best
     "solid": "solid",           # solid | type (solid per file type) | off
     "dict_mb": 64,              # LZMA2 / RAR dictionary. RAM use is roughly 10x for 7z at "best".

@@ -250,6 +250,7 @@ class TestSevenZipRoundTrip:
             out = mgr.create_tree(tree, tmp_path / "res", fmt="smallest")
         assert out.suffix == ".7z"
         assert not (tmp_path / "res.rar").exists()
+        assert not (tmp_path / "res.zip").exists()
 
 
 def test_run_tool_reports_progress_and_decodes_utf8():

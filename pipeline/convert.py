@@ -18,7 +18,7 @@ Safety model
 * The result inherits the source's previews: Name.avif and Name.thumb.avif are
   copied (never moved) next to the result, so Evoury pairs them by name.
 * By default a conversion that does not make the file smaller is discarded.
-* "smallest" as a target builds 7z, RAR and ZIP at Best compression and keeps
+* "smallest" as a target builds 7z, ZIP and RAR at Best compression and keeps
   whichever comes out smallest (a missing tool is skipped, not an error).
 * "Delete the original" means the Recycle Bin, never a permanent delete, and
   takes the original's previews along if nothing left would pair with them.

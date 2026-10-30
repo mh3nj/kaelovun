@@ -68,7 +68,7 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 - **Conservative Preservation** — Unknown files, licenses, docs, fonts are always preserved
 - **Safe Workspace (Safe-Copy Model)** — All inputs (files, directories, archives) copied to isolated workspace before processing; originals never modified
 - **Manifest Verification** — Archive contents verified against an expected manifest of names and sizes (CRC32 in *paranoid* mode), not just an integrity test
-- **RAR, 7z or ZIP output** — Pick the format in Settings > Archive, or choose *Smallest* to build 7z and RAR and keep the smaller. 7z needs [7-Zip](https://www.7-zip.org/); RAR needs WinRAR; ZIP needs nothing
+- **RAR, 7z or ZIP output** — Pick the format in Settings > Archive, or choose *Smallest* to build all three and keep the smallest. 7z needs [7-Zip](https://www.7-zip.org/); RAR needs WinRAR; ZIP needs nothing
 - **Archive converter** — Convert existing RAR / 7z / ZIP / TAR archives between formats, individually or whole folders, verified and non-destructive (see [Converting archives](#converting-archives))
 - **Safer queue and naming** — Pause/stop can no longer deadlock, retries are counted correctly, GUI naming shows the preview with the default pre-filled, and your name history persists (Tab completes)
 - **Configurable Preview Formats** — `PREVIEW_FORMAT` / `THUMB_FORMAT` settings (AVIF default, PNG/WebP/etc. supported)
@@ -317,7 +317,7 @@ Prefer the in-app route: **Settings** writes to `data/settings.json` (gitignored
 | `AFFINITY_RECOVERY_WAIT` | 20 | Seconds to wait after restarting Affinity |
 | `AFFINITY_RESTART_EVERY` | 10 | Recycle self-launched Affinity every N files (3.2.1 can't close tabs; 0 = never) |
 | `NAMING_MODE` | `manual` | `manual` (prompt) or `automation` (auto-name) |
-| `ARCHIVE_PROFILE.format` | `rar` | `rar`, `7z`, `zip`, or `smallest` (builds 7z and RAR, keeps the smaller) |
+| `ARCHIVE_PROFILE.format` | `rar` | `rar`, `7z`, `zip`, or `smallest` (builds 7z, ZIP and RAR, keeps the smallest) |
 | `ARCHIVE_PROFILE.level` | `best` | `fast`, `normal`, `best` |
 | `ARCHIVE_PROFILE.solid` | `solid` | `solid`, `type` (solid per file type), `off` |
 | `ARCHIVE_PROFILE.dict_mb` | 64 | Dictionary size. 7z at *best* needs roughly 10x this in RAM |

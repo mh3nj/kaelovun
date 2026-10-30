@@ -110,7 +110,7 @@ class Config:
 
         # Archive output. Every key is optional and can also be changed in
         # Settings > Archive (which saves to data/settings.json and wins over this).
-        #   format:   "rar" | "7z" | "zip" | "smallest"  (smallest = build 7z + RAR, keep the smaller)
+        #   format:   "rar" | "7z" | "zip" | "smallest"  (smallest = build 7z + ZIP + RAR, keep the smallest)
         #   level:    "fast" | "normal" | "best"
         #   solid:    "solid" | "type" (solid per file type) | "off"
         #   dict_mb:  dictionary size; 7z at "best" needs roughly 10x this in RAM

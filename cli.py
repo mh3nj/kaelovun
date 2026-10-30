@@ -64,7 +64,7 @@ Check archives:
     group = parser.add_argument_group("archive output")
     group.add_argument("--format", choices=FORMATS,
                        help="Archive format to produce (default: from Settings). "
-                            "'smallest' builds 7z and RAR and keeps the smaller one")
+                            "'smallest' builds 7z, ZIP and RAR and keeps the smallest")
     group.add_argument("--level", choices=LEVELS, help="Compression level")
     group.add_argument("--verify", choices=VERIFY_LEVELS, dest="verify_level",
                        help="standard = names+sizes, paranoid = also CRC32 of every file")
@@ -133,7 +133,7 @@ def list_formats(config=None, logger=None):
             ok, why = status[fmt]
             print(f"  {fmt:<4} {notes[fmt]:<28} {'available' if ok else 'NOT AVAILABLE - ' + why}")
         prefs = load_prefs(config)
-        print(f"  smallest  builds 7z and RAR, keeps the smaller")
+        print(f"  smallest  builds 7z, ZIP and RAR, keeps the smallest")
         print(f"\nCurrent default: {prefs.format}, level {prefs.level}, "
               f"solid={prefs.solid}, verify={prefs.verify}")
     else:

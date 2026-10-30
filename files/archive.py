@@ -8,8 +8,8 @@ ArchiveManager: build, test and list archives in RAR, 7z or ZIP.
     manager.test_archive(path) / list_entries(path) / list_archive(path)
 
 ``output_base`` is the destination WITHOUT an extension. The right one is added
-for the chosen format, and the real path is returned, so "smallest" (build 7z and
-RAR, keep the winner) can decide the extension itself.
+for the chosen format, and the real path is returned, so "smallest" (build 7z,
+ZIP and RAR, keep the smallest) can decide the extension itself.
 
 ``RarArchive`` is kept as an alias, and ``create_rar`` still works, so older code
 and scripts keep running.
@@ -111,13 +111,13 @@ class ArchiveManager:
         return result
 
     def _build_smallest(self, prefs, loc, root, rel_files, output_base, progress, cancel) -> Path:
-        candidates = [BACKENDS[f](loc, prefs) for f in ("7z", "rar")]
+        candidates = [BACKENDS[f](loc, prefs) for f in ("7z", "rar", "zip")]
         usable = [b for b in candidates if b.available()[0]]
         if not usable:
-            raise ToolError("Neither 7-Zip nor WinRAR was found. " + candidates[0].available()[1])
+            raise ToolError("No archiver is available to build an archive.")
         if len(usable) == 1:
             self.logger.warning(
-                f"'Smallest' needs both 7-Zip and WinRAR; only {usable[0].fmt} is available, using it.")
+                f"'Smallest' tests every installed archiver; only {usable[0].fmt} is available, using it.")
         built: List[Path] = []
         try:
             for i, backend in enumerate(usable):

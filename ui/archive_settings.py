@@ -20,7 +20,7 @@ FORMAT_LABELS = {
     "rar": "RAR5  (needs WinRAR)",
     "7z": "7z  (smallest files, needs 7-Zip)",
     "zip": "ZIP  (most compatible, built in)",
-    "smallest": "Smallest  (build 7z and RAR, keep the winner)",
+    "smallest": "Smallest  (build 7z, ZIP and RAR, keep the smallest)",
 }
 LEVEL_LABELS = {"fast": "Fast  (7z -mx1, RAR -m1, ZIP 1)",
                 "normal": "Normal  (7z -mx5, RAR -m3, ZIP 6)",
