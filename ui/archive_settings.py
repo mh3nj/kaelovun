@@ -34,6 +34,10 @@ VERIFY_LABELS = {
     "standard": "Standard  (integrity test + names + sizes)",
     "paranoid": "Paranoid  (also CRC32 of every file)",
 }
+AFTER_LABELS = {
+    "keep": "Keep the original",
+    "recycle": "Move the original to the Recycle Bin",
+}
 
 
 def _invert(mapping):
@@ -65,6 +69,10 @@ def build_archive_tab(dialog, tabs):
         "dict_mb": tk.StringVar(value=str(prefs.dict_mb)),
         "recovery_pct": tk.StringVar(value=str(prefs.recovery_pct)),
         "verify": tk.StringVar(value=VERIFY_LABELS[prefs.verify]),
+        "after_convert": tk.StringVar(
+            value=AFTER_LABELS.get(
+                stored.get("AFTER_CONVERT") or getattr(dialog.config, "AFTER_CONVERT", "keep"),
+                AFTER_LABELS["keep"])),
         "store_precompressed": tk.BooleanVar(value=prefs.store_precompressed),
         "test": tk.BooleanVar(value=prefs.test),
         "write_sidecar": tk.BooleanVar(value=prefs.write_sidecar),
@@ -83,6 +91,9 @@ def build_archive_tab(dialog, tabs):
     _combo(_row(outer, "Output format"), v["format"], FORMAT_LABELS).pack(side="left")
     _combo(_row(outer, "Compression level"), v["level"], LEVEL_LABELS, 24).pack(side="left")
     _combo(_row(outer, "Solid mode"), v["solid"], SOLID_LABELS).pack(side="left")
+    row = _row(outer, "After converting")
+    _combo(row, v["after_convert"], AFTER_LABELS, 34).pack(side="left")
+    tk.Label(row, text="used by the Convert window", fg="gray").pack(side="left", padx=8)
 
     row = _row(outer, "Dictionary size (MB)")
     ttk.Combobox(row, textvariable=v["dict_mb"], values=[str(x) for x in DICT_SIZES_MB],
@@ -190,7 +201,8 @@ def collect_archive_values(dialog) -> dict:
         raise ValueError("dictionary size must be between 1 and 1024 MB")
     if not 0 <= profile["recovery_pct"] <= 10:
         raise ValueError("recovery record must be 0-10 %")
-    out = {"ARCHIVE_PROFILE": profile}
+    out = {"ARCHIVE_PROFILE": profile,
+           "AFTER_CONVERT": _invert(AFTER_LABELS)[v["after_convert"].get()]}
     if v["sevenzip"].get().strip():
         out["SEVENZIP_PATH"] = v["sevenzip"].get().strip()
     if v["workspace"].get().strip():

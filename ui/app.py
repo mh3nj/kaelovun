@@ -25,35 +25,7 @@ except Exception:  # pragma: no cover - depends on the environment
 
 NAME_HISTORY_LIMIT = 200
 
-
-THEMES = {
-    "dark": {
-        "bg": "#2b2b2b",
-        "fg": "#ffffff",
-        "entry_bg": "#3c3c3c",
-        "entry_fg": "#ffffff",
-        "button_bg": "#4a4a4a",
-        "button_fg": "#ffffff",
-        "frame_bg": "#2b2b2b",
-        "preview_bg": "#1e1e1e",
-        "log_bg": "#1e1e1e",
-        "log_fg": "#cccccc",
-        "select_bg": "#3c3c3c",
-    },
-    "light": {
-        "bg": "#f0f0f0",
-        "fg": "#000000",
-        "entry_bg": "#ffffff",
-        "entry_fg": "#000000",
-        "button_bg": "#e0e0e0",
-        "button_fg": "#000000",
-        "frame_bg": "#f0f0f0",
-        "preview_bg": "#d0d0d0",
-        "log_bg": "#ffffff",
-        "log_fg": "#333333",
-        "select_bg": "#ffffff",
-    }
-}
+from ui.themes import THEMES  # noqa: E402  (loaded from assets/themes)
 
 
 class ApplicationUI:
@@ -189,13 +161,20 @@ class ApplicationUI:
     # ──────────────────────────────────────────────
 
     def toggle_theme(self):
-        self._theme = "light" if self._theme == "dark" else "dark"
+        ids = list(THEMES)
+        try:
+            self._theme = ids[(ids.index(self._theme) + 1) % len(ids)]
+        except ValueError:
+            self._theme = ids[0]
         self.config.THEME = self._theme
         try:
             AppSettings(self.config.SETTINGS_FILE).set("THEME", self._theme)
         except Exception:
             pass
         self.apply_theme()
+
+    def _active_theme(self) -> dict:
+        return THEMES.get(self._theme) or next(iter(THEMES.values()))
 
     def _ready_text(self) -> str:
         engine = getattr(self.config, "ENGINE", "adobe").capitalize()
@@ -215,7 +194,7 @@ class ApplicationUI:
         self.logger.info("Settings saved.")
 
     def apply_theme(self):
-        t = THEMES[self._theme]
+        t = self._active_theme()
         self.root.configure(bg=t["bg"])
         self.status_label.configure(bg=t["bg"], fg=t["fg"])
         self.progress_label.configure(bg=t["bg"], fg=t["fg"])
@@ -291,8 +270,9 @@ class ApplicationUI:
     def _refresh_brand_logo(self):
         """Swap the header logo to match the active theme."""
         try:
-            # Dark UI pairs with the dark-background mark, light UI with white.
-            logo = self._logo_images.get(self._theme)
+            # Dark themes pair with the dark-background mark, light ones with white.
+            key = "dark" if self._active_theme().get("type") == "dark" else "light"
+            logo = self._logo_images.get(key)
             if logo is None:
                 # Fall back to whichever mark loaded.
                 logo = next(iter(self._logo_images.values()), None)
@@ -407,7 +387,7 @@ class ApplicationUI:
                 self.add_input(path)
 
     def open_convert(self):
-        ConvertDialog(self.root, self.config, self.logger, THEMES[self._theme])
+        ConvertDialog(self.root, self.config, self.logger, self._active_theme())
     def resume_failed(self):
         if not self.session:
             self.status_label.config(text="No session available")
@@ -542,7 +522,7 @@ class ApplicationUI:
         self.progress_label.config(text=summary)
         self.root.bell()
         if p._total_packages:
-            SummaryDialog(self.root, THEMES[self._theme], summary, list(p.reports))
+            SummaryDialog(self.root, self._active_theme(), summary, list(p.reports))
     # ──────────────────────────────────────────────
     # Log
     # ──────────────────────────────────────────────

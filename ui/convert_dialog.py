@@ -20,17 +20,8 @@ from files.archive import ArchiveManager
 from files.archive_backends import human_size
 from files.archive_prefs import load_prefs
 from pipeline.convert import ArchiveConverter, ConvertOptions
+from ui.archive_settings import AFTER_LABELS, FORMAT_LABELS, LEVEL_LABELS
 from ui.settings_dialog import SettingsDialog
-
-TARGET_LABELS = {"zip": "ZIP  (most compatible)",
-                 "7z": "7-Zip  (7z, smallest)",
-                 "rar": "WinRAR  (RAR5)",
-                 "smallest": "Smallest  (build 7z, ZIP and RAR at Best, keep the smallest)"}
-ORIGINAL_LABELS = {"keep": "Keep the original", "recycle": "Move the original to the Recycle Bin"}
-LEVEL_NAMES = {"fast": "Fast", "normal": "Normal", "best": "Best"}
-LEVEL_HINTS = {"fast": "7z -mx1, RAR -m1, ZIP 1",
-               "normal": "7z -mx5, RAR -m3, ZIP 6",
-               "best": "7z -mx9, RAR -m5, ZIP 9"}
 
 
 class ConvertDialog(tk.Toplevel):
@@ -49,12 +40,6 @@ class ConvertDialog(tk.Toplevel):
         self._paths = []
 
         stored = AppSettings(config.SETTINGS_FILE).get("CONVERT_DEFAULTS", {}) or {}
-        default_level = load_prefs(config).level
-        self.level_labels = {"": f"Settings default ({LEVEL_NAMES.get(default_level, default_level)})"}
-        self.level_labels.update({key: f"{name} ({LEVEL_HINTS[key]})" for key, name in LEVEL_NAMES.items()})
-        self.target = tk.StringVar(value=TARGET_LABELS.get(stored.get("target", "7z"), TARGET_LABELS["7z"]))
-        self.level = tk.StringVar(value=self.level_labels.get(stored.get("level", ""), self.level_labels[""]))
-        self.original = tk.StringVar(value=ORIGINAL_LABELS.get(stored.get("original", "keep"), ORIGINAL_LABELS["keep"]))
         self.only_smaller = tk.BooleanVar(value=stored.get("only_if_smaller", True))
         self.recursive = tk.BooleanVar(value=stored.get("recursive", True))
         self.paranoid = tk.BooleanVar(value=stored.get("paranoid", False))
@@ -62,6 +47,7 @@ class ConvertDialog(tk.Toplevel):
         self.password = tk.StringVar()
 
         self._build()
+        self._refresh_announcers()
         self._apply_theme()
         self._tool_status()
         self._enable_drop()
@@ -95,15 +81,16 @@ class ConvertDialog(tk.Toplevel):
 
         opts = tk.LabelFrame(self, text="Options")
         opts.pack(fill="x", padx=10, pady=4)
-        self._opt_row(opts, "Convert to", ttk.Combobox(opts, textvariable=self.target, state="readonly",
-                                                       values=list(TARGET_LABELS.values()), width=36))
-        self.level_combo = ttk.Combobox(opts, textvariable=self.level, state="readonly",
-                                        values=list(self.level_labels.values()), width=38)
-        self._opt_row(opts, "Compression", self.level_combo)
-        self._opt_row(opts, "Original file", ttk.Combobox(opts, textvariable=self.original, state="readonly",
-                                                          values=list(ORIGINAL_LABELS.values()), width=36))
-        self.target.trace_add("write", self._on_target_changed)
-        self._on_target_changed()
+        self.ann_target = ttk.Combobox(opts, state="disabled", width=36)
+        self._opt_row(opts, "Convert to", self.ann_target)
+        self.ann_level = ttk.Combobox(opts, state="disabled", width=38)
+        self._opt_row(opts, "Compression", self.ann_level)
+        self.ann_original = ttk.Combobox(opts, state="disabled", width=36)
+        self._opt_row(opts, "Original file", self.ann_original)
+        ann = tk.Frame(opts)
+        ann.pack(fill="x", padx=8)
+        tk.Label(ann, text="These three show your current Settings > Archive values. Change them there.",
+                 fg="gray", anchor="w").pack(fill="x")
         row = tk.Frame(opts)
         row.pack(fill="x", padx=8, pady=2)
         tk.Label(row, text="Save results in", width=14, anchor="w").pack(side="left")
@@ -240,21 +227,26 @@ class ConvertDialog(tk.Toplevel):
         if picked:
             self.output_dir.set(picked)
 
-    def _on_target_changed(self, *_):
-        smallest = self._invert(TARGET_LABELS, self.target.get()) == "smallest"
-        self.level_combo.config(state="disabled" if smallest else "readonly")
+    def _after_convert(self) -> str:
+        stored = AppSettings(self.config.SETTINGS_FILE).load()
+        value = stored.get("AFTER_CONVERT") or getattr(self.config, "AFTER_CONVERT", "keep")
+        return value if value in AFTER_LABELS else "keep"
+
+    def _refresh_announcers(self):
+        prefs = load_prefs(self.config)
+        self.ann_target.config(values=[FORMAT_LABELS[prefs.format]])
+        self.ann_target.set(FORMAT_LABELS[prefs.format])
+        self.ann_level.config(values=[LEVEL_LABELS[prefs.level]])
+        self.ann_level.set(LEVEL_LABELS[prefs.level])
+        self.ann_original.config(values=[AFTER_LABELS[self._after_convert()]])
+        self.ann_original.set(AFTER_LABELS[self._after_convert()])
 
     def _open_archive_options(self):
         SettingsDialog(self, self.config, on_saved=self._on_archive_options_saved,
                        select_tab="Archive")
 
     def _on_archive_options_saved(self):
-        default_level = load_prefs(self.config).level
-        old_default = self.level_labels.get("")
-        self.level_labels[""] = f"Settings default ({LEVEL_NAMES.get(default_level, default_level)})"
-        self.level_combo.config(values=list(self.level_labels.values()))
-        if self.level.get() == old_default:
-            self.level.set(self.level_labels[""])
+        self._refresh_announcers()
         self._tool_status()
 
     def _update_count(self):
@@ -262,14 +254,12 @@ class ConvertDialog(tk.Toplevel):
 
     # ── running ──────────────────────────────────────────────
 
-    def _invert(self, labels, value):
-        return next((k for k, v in labels.items() if v == value), "")
-
     def _build_options(self, dry_run: bool) -> ConvertOptions:
+        prefs = load_prefs(self.config)
         return ConvertOptions(
-            target=self._invert(TARGET_LABELS, self.target.get()) or "7z",
-            level=self._invert(self.level_labels, self.level.get()) or None,
-            keep_original=self._invert(ORIGINAL_LABELS, self.original.get()) or "keep",
+            target=prefs.format,
+            level=None,  # Settings > Archive level
+            keep_original=self._after_convert(),
             output_dir=Path(self.output_dir.get()) if self.output_dir.get().strip() else None,
             only_if_smaller=self.only_smaller.get(),
             password=self.password.get() or None,
@@ -280,7 +270,6 @@ class ConvertDialog(tk.Toplevel):
     def _remember(self, opts: ConvertOptions):
         try:
             AppSettings(self.config.SETTINGS_FILE).set("CONVERT_DEFAULTS", {
-                "target": opts.target, "level": opts.level or "", "original": opts.keep_original,
                 "only_if_smaller": opts.only_if_smaller, "recursive": self.recursive.get(),
                 "paranoid": self.paranoid.get(), "output_dir": self.output_dir.get().strip(),
             })

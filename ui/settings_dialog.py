@@ -62,7 +62,6 @@ class SettingsDialog(tk.Toplevel):
         self.grab_set()
 
         self.engine_var = tk.StringVar(value=getattr(config, "ENGINE", "adobe"))
-        self.theme_var = tk.StringVar(value=getattr(config, "THEME", "dark"))
         self.preview_format_var = tk.StringVar(value=getattr(config, "PREVIEW_FORMAT", "AVIF"))
         self.thumb_format_var = tk.StringVar(value=getattr(config, "THUMB_FORMAT", "AVIF"))
         self.naming_mode_var = tk.StringVar(value=getattr(config, "NAMING_MODE", "manual"))
@@ -251,14 +250,21 @@ class SettingsDialog(tk.Toplevel):
                      fg="gray").pack(anchor="w", padx=20)
 
     def _build_appearance(self, tabs):
+        from ui.themes import THEMES
         frame = tk.Frame(tabs)
         tabs.add(frame, text="Appearance")
         tk.Label(frame, text="Theme", font=("Arial", 10, "bold")).pack(
             anchor="w", padx=10, pady=(10, 5))
-        tk.Radiobutton(frame, text="Dark", variable=self.theme_var,
-                       value="dark").pack(anchor="w", padx=20)
-        tk.Radiobutton(frame, text="Light", variable=self.theme_var,
-                       value="light").pack(anchor="w", padx=20)
+        self.theme_labels = {v["name"]: k for k, v in THEMES.items()}
+        current = THEMES.get(getattr(self.config, "THEME", ""))
+        current_name = (current or next(iter(THEMES.values())))["name"]
+        self.theme_var = tk.StringVar(value=current_name)
+        combo = ttk.Combobox(frame, textvariable=self.theme_var,
+                             values=list(self.theme_labels), state="readonly", width=30)
+        combo.pack(anchor="w", padx=20, pady=3)
+        tk.Label(frame, text=f"{len(THEMES)} themes from the mh3nj collection "
+                             f"(17 families, dark and light). Applies after Save.",
+                 fg="gray").pack(anchor="w", padx=20)
 
     # ── actions ──
 
@@ -302,7 +308,7 @@ class SettingsDialog(tk.Toplevel):
     def _save(self):
         values = {
             "ENGINE": self.engine_var.get(),
-            "THEME": self.theme_var.get(),
+            "THEME": self.theme_labels.get(self.theme_var.get(), ""),
             "PREVIEW_FORMAT": self.preview_format_var.get(),
             "THUMB_FORMAT": self.thumb_format_var.get(),
             "NAMING_MODE": self.naming_mode_var.get(),

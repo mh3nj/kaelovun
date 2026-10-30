@@ -136,7 +136,11 @@ class Config:
         # self.SEVENZIP_PATH = Path(r"C:\Program Files\7-Zip\7z.exe")
         # self.WORKSPACE_DIR = Path(r"D:\kaelovun_workspace")
 
-        self.THEME = "dark"
+        self.THEME = "anar-dark"  # any assets/themes/*.json stem, e.g. "ember-dark"
+
+        # What the Convert window does with a verified result's original:
+        # "keep" (default) or "recycle" (move it to the Recycle Bin).
+        self.AFTER_CONVERT = "keep"
 
         # Locate the JSX scripts folder across all deployment layouts:
         # dev source tree, PyInstaller _internal (with datas), or a plain
@@ -165,8 +169,10 @@ class Config:
                 setattr(self, key, Path(value))
             elif key == "ENGINE" and value in ("adobe", "affinity"):
                 self.ENGINE = value
-            elif key == "THEME" and value in ("dark", "light"):
+            elif key == "THEME" and isinstance(value, str) and value.strip():
                 self.THEME = value
+            elif key == "AFTER_CONVERT" and value in ("keep", "recycle"):
+                self.AFTER_CONVERT = value
             elif key in int_keys:
                 try:
                     setattr(self, key, int(value))

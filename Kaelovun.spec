@@ -22,6 +22,7 @@ a = Analysis(
     datas=[
         ('scripts', 'scripts'),
         ('assets/icons', 'assets/icons'),
+        ('assets/themes', 'assets/themes'),
     ] + _dnd_datas + _vendor_7z,
     hiddenimports=[
         'encodings',
@@ -56,6 +57,7 @@ a = Analysis(
         'ui.convert_dialog',
         'ui.summary_dialog',
         'ui.archive_settings',
+        'ui.themes',
         'patoolib',
         'send2trash',
         'tkinterdnd2',

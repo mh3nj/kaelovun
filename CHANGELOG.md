@@ -14,9 +14,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Convert Archives** has a new **Smallest** target: it builds 7z, ZIP and RAR all at Best compression, keeps whichever comes out smallest (a missing tool is skipped, not an error), and deletes the losers. Still respects "only keep a result that is smaller".
 - "Move the original to the Recycle Bin" now takes the original's `Name.avif` / `Name.thumb.avif` along, but only when nothing left next to the source would pair with them (if the result keeps the same name, the previews stay, since they are now the result's previews).
 - The Convert window has an **Archive options...** button that opens the Settings Archive tab directly. The two share the same stored settings, so a change made in either place applies to both, and the "Settings default" compression entry refreshes right after saving.
+- **34 themes from the mh3nj collection** (17 families, dark and light) ship in `assets/themes/` and replace the old two-tone dark/light pair. Pick one in Settings > Appearance (applies after Save) or cycle through all of them with the theme button. The app remembers your choice, and the header logo flips between its dark and white mark to match the theme.
 
 ### Changed
 - **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR / Smallest) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
+- The Convert window's **Convert to / Compression / Original file** rows are no longer choices: they are read-only announcers that show exactly what Settings > Archive says right now (output format, compression level, and the new **After converting** choice: keep the original or move it to the Recycle Bin). Change them in Settings, and the announcers refresh the moment you save.
 
 ---
 
