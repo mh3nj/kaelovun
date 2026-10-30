@@ -21,22 +21,22 @@
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Photoshop-blueviolet?logo=adobephotoshop&logoColor=white" alt="Photoshop"></a>
   <a href="#"><img src="https://img.shields.io/badge/Adobe-Illustrator-orange?logo=adobeillustrator&logoColor=white" alt="Illustrator"></a>
   <a href="docs/affinity-setup.md"><img src="https://img.shields.io/badge/Affinity-supported-68d9f0" alt="Affinity"></a>
-  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.5.0-brightgreen" alt="Release 1.5.0"></a>
+  <a href="https://github.com/mh3nj/kaelovun/releases"><img src="https://img.shields.io/badge/release-v1.6.2-brightgreen" alt="Release 1.6.2"></a>
   <a href="https://github.com/mh3nj/evoury"><img src="https://img.shields.io/badge/Evoury-DAM-ff69b4" alt="Evoury DAM"></a>
 </p>
 
 ---
 
-> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation. In v1.5.0, safe-copy model for all inputs and manifest-based archive verification were added.
+> **Note:** Kaelovun was previously named **Asset Organizer**. The application was rebranded in v1.3.1. In v1.4.0, Kaelovun evolved into a standalone universal creative-asset processing engine with package-based architecture, archive extraction, and headless CLI operation. In v1.5.0, safe-copy model for all inputs and manifest-based archive verification were added. In v1.6.0, archives can be written as **RAR, 7z or ZIP** (or whichever of 7z/RAR is smaller), existing archives can be **converted between formats**, and archive handling got real safety limits and a much stricter verification step.
 
-Kaelovun processes **any creative asset input** — individual files (PSD, AI, INDD, Affinity formats), directories, or archives (ZIP, RAR, 7z, tar, etc.) — automatically discovering, classifying, and processing them into verified RAR archives with AVIF previews.
+Kaelovun processes **any creative asset input** — individual files (PSD, AI, INDD, Affinity formats), directories, or archives (ZIP, RAR, 7z, tar, etc.) — automatically discovering, classifying, and processing them into verified archives (RAR, 7z or ZIP) with AVIF previews.
 
 **The philosophy:** *"Understand what you can. Preserve what you cannot."*
 
 - **Automatic classification** — No manual mode selection. Kaelovun detects file types and selects the right processor.
 - **Package preservation** — Directory structures are preserved. Licenses, docs, fonts, and unknown files are never deleted.
-- **Safe archive handling** — Archives are extracted to secure workspaces with depth limiting, path traversal protection, and bomb detection.
-- **Verified output** — Every RAR is integrity-tested before any cleanup occurs.
+- **Safe archive handling** — Archives are *inspected before they are unpacked*: path traversal, absolute paths, links, entry count, unpacked size and unpack ratio are all checked first, and limits are enforced on the bytes actually written.
+- **Verified output** — Every archive is built under a temporary name, integrity-tested and compared to a manifest (names + sizes, optionally CRC32), and only then renamed into place. It never overwrites an existing file.
 - **Headless-first** — Full CLI for automation, plus GUI for interactive use.
 - **Evoury integration** — Works standalone or as Evoury's processing engine.
 
@@ -54,8 +54,8 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 | 4 | **Preview** | Generate AVIF previews + thumbnails for transformable assets |
 | 5 | **Process** | Hide layers, save transformable files (Photoshop/Illustrator/Affinity) |
 | 6 | **Reconstruct** | Preserve original directory structure in workspace |
-| 7 | **Archive** | Create best-compression RAR5 (solid, verified) |
-| 8 | **Verify** | Test archive integrity + manifest comparison (confirm all expected files exist) |
+| 7 | **Archive** | Build RAR5, 7z or ZIP under a temporary name (format and level from Settings) |
+| 8 | **Verify & publish** | Integrity test + manifest comparison (names, sizes, optional CRC32), then an atomic rename to a unique final name |
 | 9 | **Cleanup** | Only after successful verification — remove workspace, keep originals |
 
 ---
@@ -67,13 +67,16 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 - **Processor Architecture** — Photoshop, Illustrator, InDesign, Affinity, Image, PDF, Archive, Preservation processors
 - **Conservative Preservation** — Unknown files, licenses, docs, fonts are always preserved
 - **Safe Workspace (Safe-Copy Model)** — All inputs (files, directories, archives) copied to isolated workspace before processing; originals never modified
-- **Manifest Verification** — RAR contents verified against expected file manifest (not just integrity test)
+- **Manifest Verification** — Archive contents verified against an expected manifest of names and sizes (CRC32 in *paranoid* mode), not just an integrity test
+- **RAR, 7z or ZIP output** — Pick the format in Settings > Archive, or choose *Smallest* to build 7z and RAR and keep the smaller. 7z needs [7-Zip](https://www.7-zip.org/); RAR needs WinRAR; ZIP needs nothing
+- **Archive converter** — Convert existing RAR / 7z / ZIP / TAR archives between formats, individually or whole folders, verified and non-destructive (see [Converting archives](#converting-archives))
+- **Safer queue and naming** — Pause/stop can no longer deadlock, retries are counted correctly, GUI naming shows the preview with the default pre-filled, and your name history persists (Tab completes)
 - **Configurable Preview Formats** — `PREVIEW_FORMAT` / `THUMB_FORMAT` settings (AVIF default, PNG/WebP/etc. supported)
 - **Nested Archive Safety** — Configurable depth limit (default 2), preserves beyond boundary
-- **Security** — Path traversal protection, symlink safety, archive bomb detection
+- **Security** — Path traversal protection, links never extracted, archive bomb limits (size, ratio, entry count) enforced before and during extraction
 - **CLI + GUI** — `kaelovun-cli` for automation, Tkinter GUI for interactive use
 - **Session Persistence** — Resume interrupted jobs, recover from crashes
-- **Verified RAR5** — Best compression, solid archive, integrity + manifest tested
+- **Optional sidecar manifest** — `<archive>.kaelovun.json` next to each archive, a stable description for Evoury and other tools
 
 ---
 
@@ -95,7 +98,8 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 | **Adobe Photoshop CS6+** or **Illustrator CS6+** | Default engine: opening, exporting, layer operations |
 | **Adobe InDesign CS6+** | Optional: INDD support |
 | **Affinity** (unified Canva-era app) | Optional engine: needs Settings → MCP Server enabled ([setup](docs/affinity-setup.md)) |
-| **WinRAR** (`Rar.exe`) | Required for archive creation |
+| **7-Zip** (`7z.exe`) | Needed for 7z output and for reading RAR/7z. Auto-detected (Program Files, PATH, or `vendor/7z/`) |
+| **WinRAR** (`Rar.exe`) | Needed only to *create* RAR. 7-Zip can read RAR but cannot write it. ZIP output needs neither |
 
 ### Development (running from source)
 
@@ -105,7 +109,10 @@ Each **asset package** (file, directory, or archive) goes through these stages:
 | `pywin32` | latest |
 | `Pillow` | 10.0+ |
 | `pillow-avif-plugin` | latest |
-| `patoolib` | latest |
+| `patool` | fallback extractor if 7-Zip is not installed (the import name is `patoolib`) |
+| `Send2Trash` | Recycle Bin support in *Convert Archives* |
+| `tkinterdnd2` | optional: drag and drop |
+| `pytest` | only for running the tests (`requirements-dev.txt`) |
 
 Install dependencies:
 
@@ -204,7 +211,9 @@ The runnable app will be at `dist/Kaelovun/Kaelovun.exe` (with `dist/Kaelovun/_i
    - A preview appears (representative asset from the package)
    - Type a descriptive name and press Enter or click **Confirm**
    - Optionally, edit the document in Adobe and click **Regen Preview** before confirming
-5. The app creates a `.rar` archive preserving the package structure
+5. The app creates an archive (RAR, 7z or ZIP, per Settings > Archive) preserving the package structure. When the queue finishes a summary shows sizes before and after and any file that had a problem
+
+Tips: the name box is pre-filled with the default name (just press Enter), **Tab** completes from names you've used before, and you can drag files, folders or archives onto the window if `tkinterdnd2` is installed.
 
 ### CLI (Headless / Automation)
 
@@ -230,8 +239,36 @@ python cli.py --max-depth 3 archive.rar
 # Keep workspace for debugging
 python cli.py --no-cleanup project.psd
 
-# List supported formats
+# List supported formats and which archivers were found
 python cli.py --list-formats
+
+# Choose the output format for this run: rar | 7z | zip | smallest
+python cli.py --format 7z /path/to/project_folder
+
+# Show what would happen without changing anything
+python cli.py --plan /path/to/folder
+
+# Write archives somewhere else, use a roomy scratch drive, check CRC32 of every file
+python cli.py --output D:\Library --workspace E:\scratch --verify paranoid project.psd
+```
+
+#### Converting archives (CLI)
+
+```bash
+# Convert one archive; the original stays untouched
+python cli.py --convert-to 7z old.rar
+
+# Convert every archive in a folder tree, send originals to the Recycle Bin after each verified conversion
+python cli.py --convert-to 7z D:\Library --original recycle
+
+# Preview only
+python cli.py --convert-to 7z D:\Library --plan
+
+# Other directions, with a password prompt for encrypted ones
+python cli.py --convert-to rar a.7z b.zip --level best --ask-password
+
+# Just integrity-test archives
+python cli.py --verify-only D:\Library
 ```
 
 ### Controls (GUI)
@@ -241,12 +278,13 @@ python cli.py --list-formats
 | **Select Folder** | Scan a folder recursively for creative assets |
 | **Select File** | Select a single file or archive for processing |
 | **Resume Failed** | Re-queue incomplete jobs from the last session |
+| **Convert Archives** | Open the archive converter (RAR / 7z / ZIP) |
 | **Start Queue** | Begin sequential processing |
 | **Pause / Resume** | Pause or resume between jobs |
 | **Regen Preview** | Re-export the preview from the currently open document (during naming only) |
 | **Confirm** | Accept the typed name and continue |
 | **Theme** | Toggle dark and light themes |
-| **Settings** | Engine, app paths, formats, preview, pipeline, theme |
+| **Settings** | Engine, app paths, formats, preview, pipeline, **archive**, theme |
 
 ---
 
@@ -279,6 +317,17 @@ Prefer the in-app route: **Settings** writes to `data/settings.json` (gitignored
 | `AFFINITY_RECOVERY_WAIT` | 20 | Seconds to wait after restarting Affinity |
 | `AFFINITY_RESTART_EVERY` | 10 | Recycle self-launched Affinity every N files (3.2.1 can't close tabs; 0 = never) |
 | `NAMING_MODE` | `manual` | `manual` (prompt) or `automation` (auto-name) |
+| `ARCHIVE_PROFILE.format` | `rar` | `rar`, `7z`, `zip`, or `smallest` (builds 7z and RAR, keeps the smaller) |
+| `ARCHIVE_PROFILE.level` | `best` | `fast`, `normal`, `best` |
+| `ARCHIVE_PROFILE.solid` | `solid` | `solid`, `type` (solid per file type), `off` |
+| `ARCHIVE_PROFILE.dict_mb` | 64 | Dictionary size. 7z at *best* needs roughly 10x this in RAM |
+| `ARCHIVE_PROFILE.recovery_pct` | 0 | RAR recovery record, percent of archive size |
+| `ARCHIVE_PROFILE.verify` | `standard` | `standard` (test + names + sizes) or `paranoid` (+ CRC32 of every file) |
+| `ARCHIVE_PROFILE.write_sidecar` | `false` | Write `<archive>.kaelovun.json` next to each archive |
+| `ARCHIVE_PROFILE.export_previews` | `true` | Save `<name>.avif` + `<name>.thumb.avif` next to each archive (Evoury reads these) |
+| `ARCHIVE_PROFILE.max_extract_gb` / `max_ratio` / `max_files` | 200 / 300 / 250000 | Archive-bomb limits for archives Kaelovun opens |
+| `SEVENZIP_PATH` | auto | Path to `7z.exe` |
+| `WORKSPACE_DIR` | system temp | Scratch folder for copies and extractions. Pick a roomy, fast drive |
 | `THEME` | `dark` | Startup theme (`dark` or `light`) |
 
 ---
@@ -304,22 +353,37 @@ Prefer the in-app route: **Settings** writes to `data/settings.json` (gitignored
 
 Kaelovun safely processes archives:
 
-1. **Extract** to isolated temporary workspace
-2. **Inspect** contents for nested archives (depth limited by `MAX_ARCHIVE_DEPTH`)
-3. **Classify** every file (transformable / preservable / container / license)
-4. **Process** transformable assets in workspace
-5. **Reconstruct** preserving original directory structure
-6. **Create** verified RAR5 archive
-7. **Verify** integrity + manifest comparison before any cleanup
+1. **Inspect** the archive without unpacking it: unsafe paths, links, entry count, unpacked size and unpack ratio are judged first
+2. **Extract** to an isolated workspace (ZIP/TAR by streaming code that enforces limits on bytes actually written; RAR/7z through 7-Zip)
+3. **Classify** every file (transformable / preservable / container / license), nested archives up to `MAX_ARCHIVE_DEPTH`
+4. **Process** transformable assets in the workspace
+5. **Reconstruct** preserving the original directory structure
+6. **Build** the archive under a temporary name (RAR5, 7z or ZIP)
+7. **Verify** integrity + manifest comparison, then **publish** with an atomic rename to a name that doesn't exist yet. An existing `name.rar` becomes `name (2).rar`; nothing is ever appended to or overwritten
 
 **Security protections:**
-- Path traversal (`../`, absolute paths)
-- Symlink/hardlink escapes
-- Archive bombs (decompression ratio limits)
-- Recursive extraction loops
-- Malformed archive handling
+- Path traversal (`../`, absolute paths, drive letters) refused before anything is written
+- Links are never extracted (and any that slip through are caught by a final sweep)
+- Archive bombs: unpacked size, unpack ratio and entry count limits, enforced up front and on the bytes actually written
+- Nested archives beyond the depth limit are preserved untouched
+- Encrypted archives are preserved as-is unless you supply the password (conversion only)
 
-**Supported archive formats:** ZIP, RAR, 7z, tar, tar.gz, tar.bz2, tar.xz
+**Supported archive formats:** ZIP, RAR, 7z, tar, tar.gz, tar.bz2, tar.xz (output: RAR, 7z, ZIP)
+
+### Choosing 7z or RAR
+
+7z (LZMA2) usually gives equal or smaller files than RAR5, but for creative assets the gap is often modest: PSD/AI layers and AVIF/JPEG previews are already compressed. Most of the gain comes from *solid* mode and a large dictionary. 7z is free and open; creating RAR needs WinRAR. *Smallest* builds both and keeps the winner, at twice the time.
+
+### Converting archives
+
+**Convert Archives** (GUI button or `--convert-to` on the CLI) changes the format of archives you already have. It never touches Adobe/Affinity and never changes the contents.
+
+- The original is never modified. The result is built under a temporary name and only appears after it passes: extraction matches the source listing, the archiver's integrity test, and a content comparison (names + sizes, CRC32 in paranoid mode)
+- Only one archive layer is unpacked; archives *inside* are copied as they are
+- Results never overwrite anything (`name (2).7z`), and by default a result that isn't smaller is discarded
+- *Remove original* means the Recycle Bin, and only after a verified conversion
+- Multi-volume sets (`.part1.rar`, `.7z.001`) are handled from their first part; encrypted archives need their password (the converted archive is **not** encrypted)
+- Timestamps of the files inside, and of the archive itself, are kept
 
 ---
 
@@ -333,7 +397,7 @@ Kaelovun is the **independent** ingestion pipeline for Evoury. Together they for
 Source files (PSD/AI/INDD/Affinity/archives/directories)
         │
         ▼
-Kaelovun ────→ Verified RAR archives + AVIF previews
+Kaelovun ────→ Verified archives (RAR/7z/ZIP) + AVIF previews
 (processing engine)        │
                            ▼
                       Evoury DAM
@@ -343,6 +407,8 @@ Kaelovun ────→ Verified RAR archives + AVIF previews
 **Key separation:**
 - **Evoury:** Asset discovery, library, metadata, organization, search, relationships, UI
 - **Kaelovun:** Inspection, classification, processing, transformation, preview generation, package handling, archive extraction, RAR creation, verification, preservation
+
+For every package Kaelovun writes `Name.<7z|rar|zip>`, `Name.avif` (preview) and `Name.thumb.avif` (thumbnail) side by side, plus an optional `Name.<ext>.kaelovun.json` manifest listing every file with its size and category. Evoury pairs them by folder and name, and ignores anything still being written (`*.kaelovun-part.*`). Turn the preview export off in Settings > Archive if you don't need it.
 
 You can use Kaelovun without Evoury. It produces standard files that work with any file manager or search tool.
 
@@ -360,7 +426,8 @@ cli.py                      CLI entry point (headless)
 │
 ├── pipeline/               Processing pipeline
 │   ├── processor.py        Main package-based pipeline orchestrator
-│   ├── queue.py            Sequential job queue (single-threaded)
+│   ├── jobqueue.py         Sequential job queue (pause/stop via events)
+│   ├── convert.py          Archive converter (RAR/7z/ZIP, verified)
 │   ├── job.py              Job model and status enum
 │   ├── scanner.py          Universal input scanner (file/dir/archive)
 │   └── asset_package.py    AssetPackage model + classifier
@@ -379,8 +446,13 @@ cli.py                      CLI entry point (headless)
 │
 ├── files/                  File operations
 │   ├── app_settings.py     Settings store (data/settings.json overrides)
-│   ├── archive.py          RAR creation via Rar.exe
-│   ├── archive_extraction.py  Safe archive extraction + inspection
+│   ├── archive.py          ArchiveManager: create/test/list RAR, 7z, ZIP
+│   ├── archive_backends.py 7z / Rar.exe / ZIP backends, tool discovery, listing parsers
+│   ├── archive_prefs.py    Archive preferences (defaults < config < settings.json)
+│   ├── archive_extraction.py  Safe extraction: inspection, limits, link sweep
+│   ├── manifest.py         Expected-vs-actual archive contents
+│   ├── sidecar.py          Optional <archive>.kaelovun.json
+│   ├── workspace.py        Scratch folder, free-space checks, stale cleanup
 │   ├── cleanup.py          Post-verification cleanup
 │   ├── filename.py         Name normalization and deduplication
 │   ├── naming.py           Thread-safe name prompt
@@ -390,7 +462,10 @@ cli.py                      CLI entry point (headless)
 │
 ├── ui/                     User interface
 │   ├── app.py              Tkinter GUI
-│   └── settings_dialog.py  Settings dialog
+│   ├── settings_dialog.py  Settings dialog
+│   ├── archive_settings.py Settings > Archive tab
+│   ├── convert_dialog.py   Convert Archives window
+│   └── summary_dialog.py   End-of-queue summary
 │
 └── scripts/                Adobe ExtendScript + Affinity JS automation
     ├── photoshop_export.jsx
@@ -406,7 +481,8 @@ cli.py                      CLI entry point (headless)
 **Highest priority: NEVER LOSE USER DATA.**
 
 - Original files are **never modified in place** — all inputs (files, directories, archives) copied to isolated workspace before any processing
-- Archive verification **must pass** (integrity + manifest) before any cleanup
+- Archive verification **must pass** (integrity + manifest) before the archive gets its final name, and before any cleanup
+- Archives are written under a temporary name and renamed into place: an existing archive is never appended to or overwritten, and a failed run leaves no half-written file
 - Unknown/unrecognized files are **preserved**, not deleted
 - Licenses, EULAs, documentation are **conservatively detected and preserved**
 - Crash recovery: `Resume Failed` restores incomplete jobs from session
@@ -420,7 +496,7 @@ Archives are treated as hostile input:
 
 - Path traversal blocked (`../`, absolute paths)
 - Symlink/hardlink escapes prevented
-- Archive bomb detection (decompression ratio monitoring)
+- Archive bomb limits (unpacked size, ratio, entry count) checked before extraction and on bytes written
 - Recursive extraction depth limited (configurable)
 - No arbitrary file execution
 - Extracted content never escapes controlled workspace
@@ -432,7 +508,8 @@ Archives are treated as hostile input:
 Run tests:
 
 ```bash
-# Unit tests (no Adobe required)
+# Unit tests (no Adobe required; install 7-Zip to run the real round-trip tests, they skip otherwise)
+pip install -r requirements-dev.txt
 python -m pytest tests/unit -v
 
 # Integration tests (require Adobe/Affinity)
@@ -454,6 +531,10 @@ Test coverage includes:
 - Processing failure recovery
 - Resume behavior
 - Verification failure handling
+- 7z/ZIP round trips with Unicode names, spaces and empty folders; RAR command construction and `rar lt` / `7z l -slt` listing parsers
+- Archive conversion: originals untouched, no overwrites, failed or cancelled runs leave nothing behind
+- Zip Slip, absolute paths, ratio/size/entry bombs, links, encrypted archives, nested-depth preservation
+- Queue pause/stop/resume, retry accounting, GUI naming flow
 
 ---
 

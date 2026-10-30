@@ -167,17 +167,27 @@ class TestArchiveClassifier:
 
 
 class TestRarArchiveStructure:
+    """RAR creation goes through files.archive_backends.run_tool (no subprocess mocking needed)."""
+
+    @staticmethod
+    def _fake_run(calls):
+        from files.archive_backends import ToolResult
+
+        def fake(argv, cwd=None, progress=None, cancel=None, **kw):
+            calls.append((argv, cwd))
+            Path(argv[argv.index("--") + 1]).write_bytes(b"rar")
+            return ToolResult(0, "", "")
+        return fake
+
     def test_create_rar_preserves_directory_structure(self):
-        """RAR should preserve directory structure when work_dir is set."""
+        """RAR should store relative paths and run from work_dir."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             pkg_root = tmpdir / "pkg"
-            pkg_root.mkdir()
-            (pkg_root / "SOURCE").mkdir()
+            (pkg_root / "SOURCE").mkdir(parents=True)
             (pkg_root / "SOURCE" / "logo.psd").write_text("psd")
             (pkg_root / "LICENSE").mkdir()
             (pkg_root / "LICENSE" / "license.pdf").write_text("license")
-
             rar_path = tmpdir / "output.rar"
 
             from files.archive import RarArchive
@@ -186,27 +196,22 @@ class TestRarArchiveStructure:
             config = MagicMock()
             config.WINRAR_PATH = Path("rar.exe")
             config.WINRAR_GUI_PATH = Path("WinRAR.exe")
-            logger = MagicMock()
-
-            archive = RarArchive(config, logger)
-
+            config.SETTINGS_FILE = tmpdir / "settings.json"
+            archive = RarArchive(config, MagicMock())
             files = [pkg_root / "SOURCE" / "logo.psd", pkg_root / "LICENSE" / "license.pdf"]
 
-            # Create the output file so exists() passes
-            rar_path.write_bytes(b"")
+            calls = []
+            with patch("files.archive_backends._is_file", return_value=True), \
+                    patch("files.archive_backends.run_tool", self._fake_run(calls)):
+                archive.create_rar(files, rar_path, work_dir=pkg_root)
 
-            with patch.object(archive, '_rar_exe', return_value=Path("rar.exe")):
-                with patch('subprocess.run') as mock_run:
-                    mock_run.return_value.returncode = 0
-                    archive.create_rar(files, rar_path, work_dir=pkg_root)
-
-                    call_kwargs = mock_run.call_args
-                    assert call_kwargs.kwargs.get('cwd') == pkg_root
-
-                    command = call_kwargs.args[0]
-                    for arg in command:
-                        if arg.endswith('.psd') or arg.endswith('.pdf'):
-                            assert str(pkg_root) not in arg, f"Absolute path found in command: {arg}"
+            argv, cwd = calls[0]
+            assert cwd == pkg_root
+            assert "SOURCE/logo.psd" in [a.replace("\\", "/") for a in argv]
+            for arg in argv:
+                if arg.endswith(".psd") or arg.endswith(".pdf"):
+                    assert str(pkg_root) not in arg, f"Absolute path found in command: {arg}"
+            assert rar_path.exists()
 
     def test_create_rar_without_work_dir_uses_common_parent(self):
         """Without work_dir, the common parent of all files should be used."""
@@ -215,26 +220,23 @@ class TestRarArchiveStructure:
             config = MagicMock()
             config.WINRAR_PATH = Path("rar.exe")
             config.WINRAR_GUI_PATH = Path("WinRAR.exe")
-            logger = MagicMock()
+            config.SETTINGS_FILE = tmpdir / "settings.json"
+            from files.archive import RarArchive
+            from unittest.mock import patch
 
-            archive = RarArchive(config, logger)
-
-            f1 = tmpdir / "file1.psd"
-            f2 = tmpdir / "file2.ai"
+            archive = RarArchive(config, MagicMock())
+            f1, f2 = tmpdir / "file1.psd", tmpdir / "file2.ai"
             f1.write_text("psd")
             f2.write_text("ai")
 
-            output_path = tmpdir / "output.rar"
-            output_path.write_bytes(b"")
+            calls = []
+            with patch("files.archive_backends._is_file", return_value=True), \
+                    patch("files.archive_backends.run_tool", self._fake_run(calls)):
+                archive.create_rar([f1, f2], tmpdir / "output.rar")
 
-            with patch.object(archive, '_rar_exe', return_value=Path("rar.exe")):
-                with patch('subprocess.run') as mock_run:
-                    mock_run.return_value.returncode = 0
-                    archive.create_rar([f1, f2], output_path)
-
-                    call_kwargs = mock_run.call_args
-                    cwd = call_kwargs.kwargs.get('cwd')
-                    assert cwd is not None
+            argv, cwd = calls[0]
+            assert cwd is not None and Path(cwd) == tmpdir
+            assert "file1.psd" in argv and "file2.ai" in argv
 
 
 if __name__ == "__main__":

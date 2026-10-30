@@ -42,6 +42,9 @@ class AppSettings:
         "DOCUMENT_TIMEOUT",
         "MAX_RETRIES",
         "ARCHIVE_PROFILE",
+        "SEVENZIP_PATH",
+        "WORKSPACE_DIR",
+        "CONVERT_DEFAULTS",
         "THEME",
         "NAMING_MODE",
     )

@@ -8,11 +8,13 @@ from config import Config
 from logger import Logger
 
 from pipeline.scanner import AssetScanner
-from pipeline.queue import JobQueue
+from pipeline.jobqueue import JobQueue
 
 from files.storage import StorageMonitor
 from files.preview import PreviewProcessor
-from files.archive import RarArchive
+from files.archive import ArchiveManager
+from files.archive_prefs import load_prefs
+from files.workspace import sweep_stale
 
 from adobe.photoshop import PhotoshopController
 from adobe.illustrator import IllustratorController
@@ -48,7 +50,8 @@ def main():
 
     storage = StorageMonitor(config, logger)
     preview = PreviewProcessor(config, logger)
-    archive = RarArchive(config, logger)
+    archive = ArchiveManager(config, logger)
+    sweep_stale(load_prefs(config), logger)
 
     photoshop = PhotoshopController(config, logger)
     illustrator = IllustratorController(config, logger)

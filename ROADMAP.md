@@ -4,6 +4,13 @@ Planned features and development priorities for Kaelovun.
 
 ---
 
+## Done in 1.6.0
+
+- `queue.py` renamed to `jobqueue.py`
+- 7z / ZIP output, "smallest" mode, archive converter, safety limits, sidecar manifest, drag and drop
+
+---
+
 ## Near-term
 
 ### InDesign (.indd) support
@@ -14,10 +21,6 @@ Add a new `indesign.py` COM controller matching the structure of `photoshop.py` 
 - ExtendScript for InDesign PNG export
 - Integration into `processor.py` routing
 - Inclusion in `scanner.py` file discovery
-
-### `queue.py` rename
-
-Rename the project's `queue.py` to `jobqueue.py` to remove the stdlib namespace collision. This is a prerequisite for adding dependencies that import from Python's standard `queue` module.
 
 ### Parallel preview conversion
 
@@ -59,6 +62,16 @@ Support multiple output configurations:
 | Full | 2000px AVIF | 400px AVIF | RAR (source + AVIF) |
 | Light | 2000px AVIF | 400px AVIF | None |
 | Minimal | 2000px JPEG | — | ZIP (source only) |
+
+Output format (RAR / 7z / ZIP) is already configurable; profiles would bundle it with the preview settings.
+
+### Library-level de-duplication
+
+Hash-based detection of identical files (fonts, licenses, textures) across packages. Needs a library index, so it belongs with the Evoury integration.
+
+### Rename without re-archiving
+
+`Convert Archives` already rebuilds archives safely; renaming could reuse it.
 
 ---
 

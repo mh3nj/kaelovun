@@ -1,144 +1,175 @@
 """
 archive.py
 
-RAR archive manager.
-Uses Rar.exe (console CLI tool) for all operations.
-Best compression (-m5), solid (-s), no comments.
+ArchiveManager: build, test and list archives in RAR, 7z or ZIP.
+
+    manager.create(files, output_base, work_dir=..., fmt="7z")   -> Path
+    manager.create_tree(folder, output_base, fmt="smallest")     -> Path
+    manager.test_archive(path) / list_entries(path) / list_archive(path)
+
+``output_base`` is the destination WITHOUT an extension. The right one is added
+for the chosen format, and the real path is returned, so "smallest" (build 7z and
+RAR, keep the winner) can decide the extension itself.
+
+``RarArchive`` is kept as an alias, and ``create_rar`` still works, so older code
+and scripts keep running.
 """
 
-from pathlib import Path
 import os
-import subprocess
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
+
+from files.archive_prefs import ArchivePrefs, load_prefs
+from files.archive_backends import (
+    BACKENDS, ArchiveBackend, ArchiveEntry, Cancelled, ToolError, ToolLocator,
+    human_size, list_entries as _list_entries, test_archive as _test_archive,
+)
 
 
-class RarArchive:
+class ArchiveManager:
 
     def __init__(self, config, logger):
         self.config = config
         self.logger = logger
 
+    # ── preferences / tools ──────────────────────────────────
+
+    def prefs(self) -> ArchivePrefs:
+        """Always re-read, so Settings changes apply to the very next archive."""
+        return load_prefs(self.config)
+
+    def locator(self, prefs: Optional[ArchivePrefs] = None) -> ToolLocator:
+        return ToolLocator(prefs or self.prefs())
+
     def _rar_exe(self) -> Path:
-        """Use Rar.exe (console) for CLI — more reliable than WinRAR.exe."""
-        path = self.config.WINRAR_PATH  # points to Rar.exe
-        if path.exists():
-            return path
-        # fallback to WinRAR.exe if Rar.exe missing
-        fallback = self.config.WINRAR_GUI_PATH
-        if fallback.exists():
-            return fallback
-        raise FileNotFoundError(
-            "No RAR executable found. Expected at:\n"
-            f"  {path}\n  {fallback}"
-        )
+        """Path to Rar.exe (kept for compatibility)."""
+        exe = self.locator().rar()
+        if not exe:
+            raise ToolError(BACKENDS["rar"](self.locator(), self.prefs()).available()[1])
+        return exe
 
-    def create_rar(self, files, output: Path, work_dir: Path = None) -> Path:
+    def format_status(self) -> Dict[str, Tuple[bool, str]]:
+        """{'rar': (ok, reason), '7z': ..., 'zip': ...} for the UI and CLI."""
+        prefs = self.prefs()
+        loc = ToolLocator(prefs)
+        return {fmt: cls(loc, prefs).available() for fmt, cls in BACKENDS.items()}
+
+    # ── creating ─────────────────────────────────────────────
+
+    def create(self, files: Sequence[Path], output_base: Path,
+               work_dir: Optional[Path] = None, fmt: Optional[str] = None,
+               progress: Optional[Callable[[float], None]] = None,
+               cancel: Optional[Callable[[], bool]] = None,
+               prefs: Optional[ArchivePrefs] = None) -> Path:
+        """Archive ``files`` (kept relative to ``work_dir``). Returns the archive path."""
+        files = [Path(f) for f in files]
         if not files:
-            raise ValueError("No files to archive.")
-        output = Path(output)
-        rar = self._rar_exe()
-
-        # Determine common parent directory for relative paths
-        if work_dir is None:
-            abs_files = [f.absolute() for f in files]
-            work_dir = Path(os.path.commonpath(abs_files)) if abs_files else Path.cwd()
-        else:
-            work_dir = Path(work_dir).absolute()
-
-        command = [
-            str(rar),
-            "a",
-            "-r",
-            "-m5",
-            "-s",
-            str(output),
-        ]
-        for file in files:
+            raise ToolError("Nothing to archive: file list is empty.")
+        root = Path(work_dir) if work_dir else Path(os.path.commonpath(
+            [str(f.parent) for f in files]))
+        rel = []
+        for f in files:
             try:
-                rel = file.absolute().relative_to(work_dir)
+                rel.append(str(f.resolve().relative_to(root.resolve())))
             except ValueError:
-                rel = file.absolute()
-            command.append(str(rel))
+                raise ToolError(f"{f} is outside the archive root {root}")
+        # De-duplicate while keeping order: a file listed twice is still one entry.
+        rel = list(dict.fromkeys(rel))
+        return self._build(root, rel, output_base, fmt, progress, cancel, prefs)
 
-        self.logger.info(f"Creating RAR: {output.name}")
-        self.logger.info(f"  Files: {[f.name for f in files]}")
-        self.logger.info(f"  Work dir: {work_dir}")
+    def create_tree(self, root: Path, output_base: Path, fmt: Optional[str] = None,
+                    progress: Optional[Callable[[float], None]] = None,
+                    cancel: Optional[Callable[[], bool]] = None,
+                    prefs: Optional[ArchivePrefs] = None) -> Path:
+        """Archive a whole folder tree (empty folders included)."""
+        return self._build(Path(root), None, output_base, fmt, progress, cancel, prefs)
 
-        result = subprocess.run(command, capture_output=True, text=True, cwd=work_dir)
+    def create_rar(self, files, output, work_dir=None):
+        """Legacy entry point: always RAR, ``output`` includes ``.rar``."""
+        output = Path(output)
+        base = output.with_name(output.name[:-4]) if output.name.lower().endswith(".rar") else output
+        return self.create(files, base, work_dir=work_dir, fmt="rar")
 
-        if result.returncode != 0:
-            self.logger.error(f"Command: {' '.join(command)}")
-            self.logger.error(f"stdout: {result.stdout}")
-            self.logger.error(f"stderr: {result.stderr}")
-            raise RuntimeError(
-                f"RAR failed (exit {result.returncode}) for {output.name}"
-            )
+    def _build(self, root, rel_files, output_base, fmt, progress, cancel, prefs=None) -> Path:
+        prefs = prefs or self.prefs()
+        fmt = (fmt or prefs.format).lower()
+        loc = ToolLocator(prefs)
+        output_base = Path(output_base)
 
-        if not output.exists():
-            raise RuntimeError(f"RAR file not created: {output.name}")
+        if fmt == "smallest":
+            return self._build_smallest(prefs, loc, root, rel_files, output_base, progress, cancel)
+        if fmt not in BACKENDS:
+            raise ToolError(f"Unknown archive format: {fmt}")
+        backend: ArchiveBackend = BACKENDS[fmt](loc, prefs)
+        ok, reason = backend.available()
+        if not ok:
+            raise ToolError(reason)
+        out = output_base.with_name(output_base.name + backend.ext)
+        self.logger.info(f"Creating {fmt.upper()} archive: {out.name}")
+        result = backend.create(out, root, rel_files, progress, cancel)
+        self.logger.info(f"Archive created: {out.name} ({human_size(result.stat().st_size)})")
+        return result
 
-        size_kb = output.stat().st_size / 1024
-        self.logger.info(f"  Created: {output.name} ({size_kb:.1f} KB)")
-        return output
+    def _build_smallest(self, prefs, loc, root, rel_files, output_base, progress, cancel) -> Path:
+        candidates = [BACKENDS[f](loc, prefs) for f in ("7z", "rar")]
+        usable = [b for b in candidates if b.available()[0]]
+        if not usable:
+            raise ToolError("Neither 7-Zip nor WinRAR was found. " + candidates[0].available()[1])
+        if len(usable) == 1:
+            self.logger.warning(
+                f"'Smallest' needs both 7-Zip and WinRAR; only {usable[0].fmt} is available, using it.")
+        built: List[Path] = []
+        try:
+            for i, backend in enumerate(usable):
+                out = output_base.with_name(output_base.name + backend.ext)
+                sub = None
+                if progress:
+                    sub = (lambda pct, i=i, n=len(usable): progress((i + pct / 100.0) / n * 100.0))
+                self.logger.info(f"Smallest mode: building {backend.fmt.upper()}...")
+                built.append(backend.create(out, root, rel_files, sub, cancel))
+        except BaseException:
+            for p in built:
+                p.unlink(missing_ok=True)
+            raise
+        winner = min(built, key=lambda p: p.stat().st_size)
+        for p in built:
+            if p != winner:
+                self.logger.info(f"Smallest mode: dropping {p.suffix} ({human_size(p.stat().st_size)})")
+                p.unlink(missing_ok=True)
+        self.logger.info(f"Smallest mode: kept {winner.suffix} ({human_size(winner.stat().st_size)})")
+        return winner
 
-    def test_archive(self, archive: Path) -> bool:
-        rar = self._rar_exe()
-        command = [
-            str(rar),
-            "t",
-            str(archive),
-        ]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.error(f"Test failed: {archive.name}")
-            self.logger.error(result.stderr or result.stdout)
+    # ── reading ──────────────────────────────────────────────
+
+    def test_archive(self, archive: Path, password: Optional[str] = None,
+                     progress=None, cancel=None) -> bool:
+        archive = Path(archive)
+        if not archive.exists():
+            self.logger.error(f"Archive not found for testing: {archive}")
             return False
-        self.logger.info(f"  Verified OK: {archive.name}")
-        return True
+        try:
+            ok = _test_archive(archive, self.locator(), password, progress, cancel)
+        except Cancelled:
+            raise
+        except ToolError as exc:
+            self.logger.error(f"Archive test could not run: {exc}")
+            return False
+        if not ok:
+            self.logger.error(f"Archive integrity test FAILED: {archive.name}")
+        return ok
 
-    def list_archive(self, archive: Path) -> list[str]:
-        """List contents of a RAR archive. Returns list of relative paths."""
-        rar = self._rar_exe()
-        # Use 'lt' (technical list) for more parseable output
-        command = [
-            str(rar),
-            "lt",
-            str(archive),
-        ]
-        result = subprocess.run(command, capture_output=True, text=True)
-        if result.returncode != 0:
-            # Fallback to regular 'l' command
-            command = [str(rar), "l", str(archive)]
-            result = subprocess.run(command, capture_output=True, text=True)
-            if result.returncode != 0:
-                self.logger.error(f"List failed: {archive.name}")
-                self.logger.error(result.stderr or result.stdout)
-                return []
+    def list_entries(self, archive: Path, password: Optional[str] = None,
+                     cancel=None) -> List[ArchiveEntry]:
+        return _list_entries(Path(archive), self.locator(), password, cancel)
 
-        # Parse RAR technical list output - format:
-        # Attr  Size  Packed  Ratio  Date  Time  Name
-        # ----  ----  -----  -----  ----  ----  ----
-        # -rw-r--r--  1234  567  46%  01-01-2024 12:00  folder/file.txt
-        lines = result.stdout.splitlines()
-        contents = []
-        for line in lines:
-            # Skip header lines
-            if not line.strip():
-                continue
-            if line.startswith('Attr') or line.startswith('----'):
-                continue
-            if 'files' in line.lower() and 'bytes' in line.lower():
-                continue
-            # Technical format: attributes, size, packed, ratio, date, time, name
-            # Split by whitespace, the last field is the name (may contain spaces)
-            parts = line.split(None, 6)  # Split into max 7 parts
-            if len(parts) >= 7:
-                name = parts[6]  # Name is the 7th field
-                if name and not all(c in '.A' for c in name):
-                    contents.append(name.replace('\\', '/'))
-            elif len(parts) >= 1:
-                # Fallback: try to find the name part
-                # The name is typically after the date/time fields
-                candidate = parts[-1]
-                if candidate and not all(c in '.A' for c in candidate):
-                    contents.append(candidate.replace('\\', '/'))
-        return contents
+    def list_archive(self, archive: Path) -> List[str]:
+        """File paths inside the archive (directories excluded)."""
+        try:
+            return [e.path for e in self.list_entries(archive) if not e.is_dir]
+        except ToolError as exc:
+            self.logger.warning(f"Could not list archive {Path(archive).name}: {exc}")
+            return []
+
+
+# Backwards-compatible name used across the code base and older tests.
+RarArchive = ArchiveManager

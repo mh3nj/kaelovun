@@ -4,16 +4,18 @@ requirements_check.py
 Verify environment before starting. Warns about anything missing rather
 than blocking startup entirely — someone batch-processing only PSDs today
 shouldn't be locked out because Illustrator's path changed after an update.
-WinRAR is the one hard requirement, since every format needs it at the end
-of the pipeline regardless of source app.
+The one hard requirement is an archiver able to build the chosen output format:
+WinRAR for RAR, 7-Zip for 7z, nothing for ZIP ("smallest" needs at least one).
 """
+
+from files.archive import ArchiveManager
+from files.archive_prefs import load_prefs
 
 
 def check_environment(config, logger=None):
     warn = logger.warning if logger else print
     missing = []
-    if not config.WINRAR_PATH.exists():
-        raise RuntimeError(f"WinRAR not found at {config.WINRAR_PATH}. Every asset needs it to archive, so this one can't be skipped.")
+    _check_archiver(config, logger)
     engine = getattr(config, "ENGINE", "adobe")
     if engine == "affinity":
         affinity = getattr(config, "AFFINITY_PATH", None)
@@ -34,6 +36,29 @@ def check_environment(config, logger=None):
         for item in missing:
             warn(item)
     return True
+
+
+def _check_archiver(config, logger=None):
+    """Fail early (with an actionable message) if the chosen output format can't be built."""
+    prefs = load_prefs(config)
+
+    class _Quiet:
+        def info(self, *_): pass
+        warning = error = info
+
+    status = ArchiveManager(config, logger or _Quiet()).format_status()
+    wanted = prefs.format
+    if wanted == "smallest":
+        if not (status["7z"][0] or status["rar"][0]):
+            raise RuntimeError("Output format is 'smallest' but neither 7-Zip nor WinRAR was found. "
+                               + status["7z"][1])
+        return
+    ok, why = status[wanted]
+    if not ok:
+        others = [f for f in ("7z", "zip", "rar") if f != wanted and status[f][0]]
+        hint = (f" You can switch the output format to {' or '.join(others)} in Settings > Archive."
+                if others else "")
+        raise RuntimeError(f"Output format is '{wanted}' but it can't be built: {why}{hint}")
 
 
 def _mcp_reachable(config) -> bool:

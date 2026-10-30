@@ -10,8 +10,6 @@ build/
 *.spec
 *.manifest
 
-.psd
-.webm
 *.psd
 *.webm
 
@@ -34,6 +32,8 @@ Thumbs.db
 # ── Project runtime data ────────────────────────────────
 data/
 *.log
+.pytest_cache/
+*.kaelovun-part*
 *.zip
 .kaelovun_state.json
 

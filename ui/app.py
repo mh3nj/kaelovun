@@ -5,7 +5,9 @@ Minimal control interface with progress tracking,
 name history (arrow keys), and dark/light theme toggle.
 """
 
+import json
 import tkinter as tk
+from queue import Empty, Queue
 from tkinter import filedialog, scrolledtext
 from pathlib import Path
 from PIL import Image, ImageTk
@@ -13,6 +15,15 @@ from PIL import Image, ImageTk
 from pipeline.job import Job
 from files.app_settings import AppSettings
 from ui.settings_dialog import SettingsDialog
+from ui.convert_dialog import ConvertDialog
+from ui.summary_dialog import SummaryDialog
+
+try:  # optional: drag & drop onto the window
+    from tkinterdnd2 import TkinterDnD, DND_FILES
+except Exception:  # pragma: no cover - depends on the environment
+    TkinterDnD = DND_FILES = None
+
+NAME_HISTORY_LIMIT = 200
 
 
 THEMES = {
@@ -60,12 +71,17 @@ class ApplicationUI:
         self._prompt_shown_for = None
         self._last_preview_version = -1
 
-        # Name history
-        self._name_history = []
+        # Name history (persisted between runs)
+        self._history_file = Path(config.SETTINGS_FILE).with_name("name_history.json")
+        self._name_history = self._load_history()
         self._name_history_index = -1
         self._name_saved_typing = ""
+        self._summary_shown = True
 
-        self.root = tk.Tk()
+        # The queue's processor asks THIS window for names (not the console).
+        self.queue.processor.naming_backend = "gui"
+
+        self.root = TkinterDnD.Tk() if TkinterDnD else tk.Tk()
         self.root.title("Kaelovun")
         self.root.geometry("700x810+100+50")
 
@@ -74,8 +90,11 @@ class ApplicationUI:
         self._load_logos()
         self._apply_window_icon()
 
+        self._log_queue = Queue()
         self.create_widgets()
         self.apply_theme()
+        self._enable_drop()
+        self.root.after(100, self._drain_log)
 
     def create_widgets(self):
         # ── Branding: theme-aware logo + title ──
@@ -103,6 +122,9 @@ class ApplicationUI:
 
         self.resume_failed_button = tk.Button(top, text="Resume Failed", command=self.resume_failed, width=13)
         self.resume_failed_button.pack(side="left", padx=(0, 5))
+
+        self.convert_button = tk.Button(top, text="Convert Archives", command=self.open_convert, width=15)
+        self.convert_button.pack(side="left", padx=(0, 5))
 
         self.theme_button = tk.Button(top, text="Theme", command=self.toggle_theme, width=8)
         self.theme_button.pack(side="right")
@@ -135,6 +157,7 @@ class ApplicationUI:
         self.name_entry.bind("<Return>", self.confirm_name)
         self.name_entry.bind("<Up>", self.history_up)
         self.name_entry.bind("<Down>", self.history_down)
+        self.name_entry.bind("<Tab>", self.complete_from_history)
 
         self.regen_button = tk.Button(name_frame, text="Regen Preview", command=self.regenerate_preview, width=12)
         self.regen_button.pack(side="right", padx=(5, 0))
@@ -200,7 +223,7 @@ class ApplicationUI:
         self.preview_label.configure(bg=t["preview_bg"], fg=t["fg"])
         self.name_entry.configure(bg=t["entry_bg"], fg=t["entry_fg"], insertbackground=t["fg"])
         self.log_area.configure(bg=t["log_bg"], fg=t["log_fg"])
-        for w in (self.folder_button, self.resume_failed_button, self.theme_button, self.settings_button, self.start_button,
+        for w in (self.folder_button, self.file_button, self.convert_button, self.resume_failed_button, self.theme_button, self.settings_button, self.start_button,
                   self.pause_button, self.resume_button, self.regen_button, self.confirm_button):
             w.configure(bg=t["button_bg"], fg=t["button_fg"])
         for child in self.root.winfo_children():
@@ -285,6 +308,32 @@ class ApplicationUI:
     # Name history (arrow keys)
     # ──────────────────────────────────────────────
 
+    def _load_history(self):
+        try:
+            data = json.loads(self._history_file.read_text(encoding="utf-8"))
+            return [str(x) for x in data if isinstance(x, str)][-NAME_HISTORY_LIMIT:]
+        except (OSError, ValueError):
+            return []
+
+    def _save_history(self):
+        try:
+            self._history_file.parent.mkdir(parents=True, exist_ok=True)
+            self._history_file.write_text(
+                json.dumps(self._name_history[-NAME_HISTORY_LIMIT:], ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
+
+    def complete_from_history(self, event=None):
+        """Tab: finish what you've typed with the most recent matching earlier name."""
+        typed = self.name_entry.get()
+        if typed:
+            for candidate in reversed(self._name_history):
+                if candidate.lower().startswith(typed.lower()) and candidate != typed:
+                    self.name_entry.delete(0, tk.END)
+                    self.name_entry.insert(0, candidate)
+                    break
+        return "break"   # keep focus in the box
+
     def history_up(self, event=None):
         if not self._name_history:
             return
@@ -316,13 +365,7 @@ class ApplicationUI:
         folder = filedialog.askdirectory()
         if not folder:
             return
-        path = Path(folder)
-        self.logger.info(f"Folder selected: {path}")
-        self.status_label.config(text=f"Scanning: {path.name}...")
-        self.root.update()
-        jobs = self.scanner.scan_input(path)
-        self.queue.add_jobs(jobs)
-        self.status_label.config(text=f"{len(jobs)} package(s) queued from {path.name}")
+        self.add_input(Path(folder))
 
     def select_file(self):
         """Select a single file or archive for processing."""
@@ -337,14 +380,34 @@ class ApplicationUI:
         )
         if not file_path:
             return
-        path = Path(file_path)
-        self.logger.info(f"File selected: {path}")
+        self.add_input(Path(file_path))
+
+    def add_input(self, path: Path):
+        """Scan a file/folder/archive and queue what it contains."""
+        self.logger.info(f"Input selected: {path}")
         self.status_label.config(text=f"Scanning: {path.name}...")
         self.root.update()
         jobs = self.scanner.scan_input(path)
         self.queue.add_jobs(jobs)
         self.status_label.config(text=f"{len(jobs)} package(s) queued from {path.name}")
 
+    def _enable_drop(self):
+        if not (TkinterDnD and hasattr(self.root, "drop_target_register")):
+            return
+        try:
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind("<<Drop>>", self._on_drop)
+        except Exception:
+            pass
+
+    def _on_drop(self, event):
+        for raw in self.root.tk.splitlist(event.data):
+            path = Path(raw)
+            if path.exists():
+                self.add_input(path)
+
+    def open_convert(self):
+        ConvertDialog(self.root, self.config, self.logger, THEMES[self._theme])
     def resume_failed(self):
         if not self.session:
             self.status_label.config(text="No session available")
@@ -358,6 +421,7 @@ class ApplicationUI:
         self.status_label.config(text=f"{len(jobs)} incomplete job(s) re-queued from last session")
 
     def start_queue(self):
+        self._summary_shown = False
         self.queue.start()
         self.status_label.config(text="Queue running...")
         self.monitor_requests()
@@ -383,14 +447,24 @@ class ApplicationUI:
         self.current_request = request
         self.show_preview(preview)
         self.name_entry.delete(0, tk.END)
+        default = getattr(request, "default_name", None)
+        if default:
+            # Pre-filled and selected: press Enter to accept, or just start typing.
+            self.name_entry.insert(0, default)
+            self.name_entry.select_range(0, tk.END)
         self.name_entry.focus()
+        self.status_label.config(text="Name this package, then press Enter")
+        self.root.bell()
 
     def confirm_name(self, event=None):
         name = self.name_entry.get().strip()
         if not name:
             return
         if self.current_request:
+            if name in self._name_history:
+                self._name_history.remove(name)
             self._name_history.append(name)
+            self._save_history()
             self._name_history_index = -1
             self.current_request.submit(name)
             self.current_request = None
@@ -439,7 +513,7 @@ class ApplicationUI:
 
     def poll_progress(self):
         p = self.queue.processor
-        total = p._total_assets
+        total = p._total_packages
         done = p._processed
         failed = p._failed
         left = total - done - failed
@@ -454,16 +528,42 @@ class ApplicationUI:
 
         if self.queue.running or self.queue.paused:
             self.root.after(1000, self.poll_progress)
+        else:
+            self._on_queue_finished()
 
+    def _on_queue_finished(self):
+        """Once per run: tell the user what happened, without making them read the log."""
+        if self._summary_shown:
+            return
+        self._summary_shown = True
+        p = self.queue.processor
+        summary = p.get_summary()
+        self.status_label.config(text=self._ready_text())
+        self.progress_label.config(text=summary)
+        self.root.bell()
+        if p._total_packages:
+            SummaryDialog(self.root, THEMES[self._theme], summary, list(p.reports))
     # ──────────────────────────────────────────────
     # Log
     # ──────────────────────────────────────────────
 
     def log(self, message: str):
-        self.log_area.config(state="normal")
-        self.log_area.insert(tk.END, message + "\n")
-        self.log_area.see(tk.END)
-        self.log_area.config(state="disabled")
+        """Thread-safe: worker threads only enqueue; the Tk thread does the drawing."""
+        self._log_queue.put(message)
+
+    def _drain_log(self):
+        try:
+            batch = []
+            while True:
+                batch.append(self._log_queue.get_nowait())
+        except Empty:
+            pass
+        if batch:
+            self.log_area.config(state="normal")
+            self.log_area.insert(tk.END, "\n".join(batch) + "\n")
+            self.log_area.see(tk.END)
+            self.log_area.config(state="disabled")
+        self.root.after(100, self._drain_log)
 
     # ──────────────────────────────────────────────
     # Run

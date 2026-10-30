@@ -7,6 +7,75 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## 1.6.2 — 2026-10-26
+
+### Changed
+- The sidecar now also records the **CRC32 of every file** (taken from the finished archive's own listing, so there is no extra pass over the data). Evoury uses it to find the same file inside several packages and packages that mostly contain the same files, without opening any archive.
+
+---
+
+## 1.6.1 — 2026-10-26
+
+### Fixed
+- **Previews were no longer saved next to the archive.** Since the package model (1.4) the preview and thumbnail only existed *inside* the archive, but Evoury looks for `Name.avif` and `Name.thumb.avif` next to `Name.<archive>`. They are now written beside every archive with the same name (new setting: *Save the preview next to each archive*, on by default). They are written first and the archive last, so Evoury never sees a half-finished package.
+- When a name is already taken, the archive, preview, thumbnail and sidecar all move together to the next free name (`Pack (2).7z`, `Pack (2).avif`, ...) instead of only the archive.
+
+### Changed
+- The optional sidecar (`<archive>.kaelovun.json`) now lists every file in the archive with its **size** and category (and CRC32 in paranoid mode), plus the archive's own size. Evoury uses it to show an archive's contents instantly, including RAR.
+- Temporary files use the `.kaelovun-part` marker everywhere (archive, preview, thumbnail), which Evoury ignores while they are being written.
+
+---
+
+## 1.6.0 — 2026-10-24
+
+### Added
+- **7z and ZIP output** next to RAR, plus **Smallest** (build 7z and RAR, keep the smaller). Choose in Settings > Archive or with `--format`. 7z needs 7-Zip, RAR needs WinRAR, ZIP is built in.
+- **Archive converter**: change existing archives between RAR / 7z / ZIP (TAR.* as input), from the GUI (**Convert Archives**) or the CLI (`--convert-to`). Verified, never modifies the original, never overwrites, optional Recycle Bin for originals, multi-volume and password support, `--plan` preview.
+- **Settings > Archive tab**: format, level, solid mode, dictionary size, RAR recovery record, verification level, safety limits, 7-Zip path, scratch (workspace) folder.
+- **Safety limits** for archives Kaelovun opens: unpacked size, unpack ratio and entry count, enforced before unpacking and again on the bytes written.
+- **CLI**: `--format`, `--level`, `--verify`, `--workspace`, `--plan`/`--dry-run`, `--verify-only`, `--convert-to`, `--original`, multiple inputs. `--output`, `--no-cleanup` and `--verify-only` were accepted but silently ignored; they now work.
+- **Paranoid verification** (CRC32 of every file) and an optional **sidecar manifest** (`<archive>.kaelovun.json`).
+- **GUI**: end-of-queue summary, drag and drop (with `tkinterdnd2`), default name pre-filled in the naming box, persistent name history with Tab completion.
+- **Workspace**: configurable scratch folder, free-space check on the drive actually used, stale workspaces swept at startup.
+- Tests: ~100 new tests (backends, parsers, security, conversion, queue, processor, GUI-facing flows). `tests/conftest.py` stubs pywin32 so the pure-Python suite runs without Windows.
+
+### Fixed
+- **Preview was exported before any document was opened.** Every controller exports the *active* document, so the preview step could not work for PSD/AI/INDD/Affinity files. It now opens the document first. The representative document stays open while you name the package, so *edit in the app, then Regen Preview* works again.
+- **GUI naming never received a preview.** The processor never raised the name request, so the GUI prompt didn't appear and the console `input()` path was used. The GUI backend is now wired up (and falls back to the default name when no one answers).
+- **An archive could be written over its own source.** For archive inputs the output was `<source folder>/<stem>.rar`, which for `pack.rar` is the source itself, and `rar a` updates an existing archive in place. Output is now built under a temporary name and published with a unique name.
+- **The manifest check could not work with real RAR output.** `rar lt` prints `Key: value` blocks, not columns, so names with spaces were mangled and extra tokens appeared. Listing now uses 7-Zip's `-slt` format (and a correct `rar lt` parser as a fallback). A file that was both an asset and its own preview (the contact sheet) was also counted twice and could fail verification.
+- **Nested archives at the depth limit were deleted** after being "preserved", leaving a missing file in the archive list. They are now kept.
+- **No archive-bomb protection existed** for RAR/7z (and none for the ratio on any format) despite being documented. Added (see above).
+- **RAR listing in the classifier always failed** (`_list_rar` called a method with the wrong arguments) and extracted the whole archive just to list it. Listing no longer extracts.
+- **Archives with many files could exceed the Windows command-line limit.** File lists now go through a UTF-8 list file (7z) or are batched (RAR).
+- **Disk-space check looked at the wrong drive** (the source's, not the scratch folder's).
+- **Queue**: stopping a paused queue hung the worker forever; pause set before start was lost; the job list was not thread-safe.
+- **Retry accounting**: a job that succeeded on retry was counted as failed, and retry was recursive.
+- **GUI**: the progress label raised an error every second (`_total_assets` did not exist) and never updated; log lines were drawn from worker threads; Settings > Save discarded settings it doesn't edit; **Select File** was not themed.
+- `requirements.txt` listed `patoolib`, which is not a PyPI package. The package is `patool`.
+- The startup check required WinRAR even when the output format was 7z or ZIP.
+- Unicode filenames in tool output are decoded as UTF-8; passwords go through stdin, never the command line.
+- Contact sheets are named after the archive (`pack_contact_sheet.avif`) instead of the internal `_extracted_pack_contact_sheet.avif`.
+- File-name normalisation now strips trailing dots/spaces, control characters and reserved device names (`CON`, `NUL`...).
+
+### Changed
+- `pipeline/queue.py` is now `pipeline/jobqueue.py` (it shadowed the standard-library `queue`). `pipeline/__init__.py` imports lazily so the converter and `--verify-only` work without Adobe/Affinity installed.
+- `RarArchive` is now `ArchiveManager`; `RarArchive` and `create_rar()` remain as aliases.
+- `ARCHIVE_PROFILE` is now actually used (old `method`/`solid`/`recovery` keys are still understood).
+- `CHANGES.md` (audit notes) moved to `docs/history/`.
+
+### Notes
+- RAR creation and `rar lt` parsing follow WinRAR's documented switches (`-ma5 -m5 -md -s/-se/-s- -rr -ms`) but were not run against a real `Rar.exe` while developing this release; everything 7z/ZIP/convert/extraction related was exercised against real 7-Zip. Run a RAR job once and check `data/kaelovun.log` for "Archive manifest mismatch".
+
+---
+
+## 1.5.0
+
+### Added
+- Safe-copy model for all inputs (files, directories, archives) and manifest-based archive verification.
+
+---
+
 ## 1.4.0 — 2026-09-25
 
 ### Fixed

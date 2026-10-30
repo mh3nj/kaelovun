@@ -46,6 +46,11 @@ class Job:
         self.extracted_root = None
         self.package_files: List[Path] = []
         self.workspace_dir = None
+        # Per-job output choices and results
+        self.archive_format = None      # None = use the Settings default
+        self.output_dir = None          # None = next to the source
+        self.report = None              # filled in when the job finishes
+        self.exported_preview = None    # preview saved next to the archive (for Evoury)
 
     def set_status(self, status: JobStatus):
         self.status = status

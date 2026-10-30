@@ -14,7 +14,7 @@
 | No InDesign (.indd) support | Unimplemented | — |
 | WinRAR path is hardcoded in config.py | By design | Requires rebuild to change |
 | DPI issues on mixed-monitor setups | tkinter limitation | Visual only |
-| `queue.py` shadows stdlib `queue` | Design debt | May affect future dependencies |
+| ~~`queue.py` shadows stdlib `queue`~~ | Resolved in 1.6.0 | Renamed to `jobqueue.py` |
 
 ---
 
@@ -122,7 +122,9 @@ On Windows systems with different DPI scaling across multiple monitors, the tkin
 
 ---
 
-## `queue.py` namespace collision
+## `queue.py` namespace collision (resolved in 1.6.0)
+
+**Status:** fixed: the module is now `pipeline/jobqueue.py`.
 
 **Status:** Design debt  
 **Impact:** May affect future library dependencies

@@ -108,12 +108,33 @@ class Config:
         self.MAX_RETRIES = 2
         self.MAX_ARCHIVE_DEPTH = 2
 
+        # Archive output. Every key is optional and can also be changed in
+        # Settings > Archive (which saves to data/settings.json and wins over this).
+        #   format:   "rar" | "7z" | "zip" | "smallest"  (smallest = build 7z + RAR, keep the smaller)
+        #   level:    "fast" | "normal" | "best"
+        #   solid:    "solid" | "type" (solid per file type) | "off"
+        #   dict_mb:  dictionary size; 7z at "best" needs roughly 10x this in RAM
+        #   verify:   "standard" (integrity test + names + sizes) | "paranoid" (+ CRC32 of every file)
+        #   max_extract_gb / max_ratio / max_files: archive-bomb limits for archives we open
         self.ARCHIVE_PROFILE = {
-            "method": "best",
-            "solid": True,
-            "recovery": False,
-            "test": True
+            "format": "rar",
+            "level": "best",
+            "solid": "solid",
+            "dict_mb": 64,
+            "recovery_pct": 0,
+            "store_precompressed": True,
+            "test": True,
+            "verify": "standard",
+            "write_sidecar": False,
+            "max_extract_gb": 200,
+            "max_ratio": 300,
+            "max_files": 250000,
         }
+
+        # Optional. Leave unset for auto-detection (7-Zip is looked for in vendor/7z,
+        # PATH and Program Files; the scratch folder defaults to the system temp dir).
+        # self.SEVENZIP_PATH = Path(r"C:\Program Files\7-Zip\7z.exe")
+        # self.WORKSPACE_DIR = Path(r"D:\kaelovun_workspace")
 
         self.THEME = "dark"
 

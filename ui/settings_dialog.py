@@ -3,7 +3,7 @@ settings_dialog.py
 
 In-app Settings dialog (opened via the Settings button).
 
-Tabs: Engine / Applications / Formats / Preview / Pipeline / Appearance.
+Tabs: Engine / Applications / Formats / Preview / Pipeline / Archive / Appearance.
 Everything saves machine-local to data/settings.json through
 AppSettings, then reloads straight into the live Config — no restart,
 no config.py editing, no rebuild. Empty path fields mean auto-detect.
@@ -14,6 +14,7 @@ from tkinter import ttk, filedialog
 from pathlib import Path
 
 from files.app_settings import AppSettings
+from ui.archive_settings import build_archive_tab, collect_archive_values
 
 
 INT_FIELDS = (
@@ -54,7 +55,7 @@ class SettingsDialog(tk.Toplevel):
         self.config = config
         self.on_saved = on_saved
         self.title("Settings")
-        self.geometry("560x560")
+        self.geometry("640x700")
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
@@ -97,6 +98,7 @@ class SettingsDialog(tk.Toplevel):
         self._build_formats(tabs)
         self._build_preview(tabs)
         self._build_numbers(tabs, "Pipeline")
+        build_archive_tab(self, tabs)
         self._build_appearance(tabs)
 
         self.error_label = tk.Label(self, text="", fg="red", anchor="w")
@@ -308,10 +310,18 @@ class SettingsDialog(tk.Toplevel):
                     values[key] = text
             values["SUPPORTED_SOURCE_EXTENSIONS"] = sorted(
                 e for e, var in self.format_vars.items() if var.get())
-            saved = AppSettings(self.config.SETTINGS_FILE).save(values)
+            values.update(collect_archive_values(self))
+            # Merge: keep settings this dialog doesn't own (e.g. the Convert dialog's
+            # remembered choices), but let blank path fields clear their old override.
+            store = AppSettings(self.config.SETTINGS_FILE)
+            merged = store.load()
+            for key in [k for k, _ in PATH_FIELDS] + ["SEVENZIP_PATH", "WORKSPACE_DIR"]:
+                merged.pop(key, None)
+            merged.update(values)
+            saved = store.save(merged)
             self.config._apply_user_settings()
         except ValueError as error:
-            self.error_label.config(text=f"Invalid number: {error}")
+            self.error_label.config(text=f"Invalid value: {error}")
             return
         _ = saved
         self.destroy()

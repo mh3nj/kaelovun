@@ -84,7 +84,7 @@ logger.py                Logging (file + console + UI)
 requirements_check.py    Environment verification on startup
 
 scanner.py               Recursive folder scanning
-queue.py                 Sequential job queue
+jobqueue.py              Sequential job queue
 processor.py             Main pipeline orchestrator
 job.py                   Job model and status enum
 
