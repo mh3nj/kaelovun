@@ -7,6 +7,13 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## Unreleased
+
+### Changed
+- **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
+
+---
+
 ## 1.6.2 — 2026-10-26
 
 ### Changed

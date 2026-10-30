@@ -22,7 +22,9 @@ FORMAT_LABELS = {
     "zip": "ZIP  (most compatible, built in)",
     "smallest": "Smallest  (build 7z and RAR, keep the winner)",
 }
-LEVEL_LABELS = {"fast": "Fast", "normal": "Normal", "best": "Best (slowest)"}
+LEVEL_LABELS = {"fast": "Fast  (7z -mx1, RAR -m1, ZIP 1)",
+                "normal": "Normal  (7z -mx5, RAR -m3, ZIP 6)",
+                "best": "Best  (7z -mx9, RAR -m5, ZIP 9)"}
 SOLID_LABELS = {
     "solid": "Solid  (best ratio)",
     "type": "Solid per file type  (good ratio, faster)",

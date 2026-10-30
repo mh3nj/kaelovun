@@ -18,11 +18,15 @@ from tkinter import filedialog, messagebox, ttk
 from files.app_settings import AppSettings
 from files.archive import ArchiveManager
 from files.archive_backends import human_size
+from files.archive_prefs import load_prefs
 from pipeline.convert import ArchiveConverter, ConvertOptions
 
-TARGET_LABELS = {"7z": "7z  (smallest)", "rar": "RAR5  (needs WinRAR)", "zip": "ZIP  (most compatible)"}
-LEVEL_LABELS = {"": "Use Settings default", "fast": "Fast", "normal": "Normal", "best": "Best (slowest)"}
+TARGET_LABELS = {"zip": "ZIP  (most compatible)", "7z": "7-Zip  (7z, smallest)", "rar": "WinRAR  (RAR5)"}
 ORIGINAL_LABELS = {"keep": "Keep the original", "recycle": "Move the original to the Recycle Bin"}
+LEVEL_NAMES = {"fast": "Fast", "normal": "Normal", "best": "Best"}
+LEVEL_HINTS = {"fast": "7z -mx1, RAR -m1, ZIP 1",
+               "normal": "7z -mx5, RAR -m3, ZIP 6",
+               "best": "7z -mx9, RAR -m5, ZIP 9"}
 
 
 class ConvertDialog(tk.Toplevel):
@@ -41,8 +45,11 @@ class ConvertDialog(tk.Toplevel):
         self._paths = []
 
         stored = AppSettings(config.SETTINGS_FILE).get("CONVERT_DEFAULTS", {}) or {}
+        default_level = load_prefs(config).level
+        self.level_labels = {"": f"Settings default ({LEVEL_NAMES.get(default_level, default_level)})"}
+        self.level_labels.update({key: f"{name} ({LEVEL_HINTS[key]})" for key, name in LEVEL_NAMES.items()})
         self.target = tk.StringVar(value=TARGET_LABELS.get(stored.get("target", "7z"), TARGET_LABELS["7z"]))
-        self.level = tk.StringVar(value=LEVEL_LABELS.get(stored.get("level", ""), LEVEL_LABELS[""]))
+        self.level = tk.StringVar(value=self.level_labels.get(stored.get("level", ""), self.level_labels[""]))
         self.original = tk.StringVar(value=ORIGINAL_LABELS.get(stored.get("original", "keep"), ORIGINAL_LABELS["keep"]))
         self.only_smaller = tk.BooleanVar(value=stored.get("only_if_smaller", True))
         self.recursive = tk.BooleanVar(value=stored.get("recursive", True))
@@ -87,7 +94,7 @@ class ConvertDialog(tk.Toplevel):
         self._opt_row(opts, "Convert to", ttk.Combobox(opts, textvariable=self.target, state="readonly",
                                                        values=list(TARGET_LABELS.values()), width=36))
         self._opt_row(opts, "Compression", ttk.Combobox(opts, textvariable=self.level, state="readonly",
-                                                        values=list(LEVEL_LABELS.values()), width=36))
+                                                        values=list(self.level_labels.values()), width=38))
         self._opt_row(opts, "Original file", ttk.Combobox(opts, textvariable=self.original, state="readonly",
                                                           values=list(ORIGINAL_LABELS.values()), width=36))
         row = tk.Frame(opts)
@@ -233,7 +240,7 @@ class ConvertDialog(tk.Toplevel):
     def _build_options(self, dry_run: bool) -> ConvertOptions:
         return ConvertOptions(
             target=self._invert(TARGET_LABELS, self.target.get()) or "7z",
-            level=self._invert(LEVEL_LABELS, self.level.get()) or None,
+            level=self._invert(self.level_labels, self.level.get()) or None,
             keep_original=self._invert(ORIGINAL_LABELS, self.original.get()) or "keep",
             output_dir=Path(self.output_dir.get()) if self.output_dir.get().strip() else None,
             only_if_smaller=self.only_smaller.get(),
