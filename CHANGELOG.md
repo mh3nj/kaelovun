@@ -20,6 +20,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR / Smallest) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
 - The Convert window's **Convert to / Compression / Original file** rows are no longer choices: they are read-only announcers that show exactly what Settings > Archive says right now (output format, compression level, and the new **After converting** choice: keep the original or move it to the Recycle Bin). Change them in Settings, and the announcers refresh the moment you save.
 
+### Fixed
+- **The Affinity engine now opens PSD files too.** Selecting Affinity (with its MCP server enabled) used to still launch Photoshop for PSDs, because only AI/EPS followed the engine pick while PSD was hard-wired to Photoshop. Now PSD, AI and EPS all open in Affinity when it is the active engine; native .afphoto/.afdesign/.afpub files always did and still do.
+
 ---
 
 ## 1.6.2 — 2026-10-26

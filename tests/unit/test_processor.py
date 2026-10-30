@@ -277,5 +277,43 @@ class TestProcessorTransformableFileProcessing:
             processor.indesign.save.assert_called_once()
 
 
+class TestEngineRouting:
+    def _controller(self, engine, ext, affinity=MagicMock()):
+        config = MockConfig()
+        config.ENGINE = engine
+        processor = AssetProcessor(
+            config, MockLogger(), MagicMock(), MagicMock(),
+            MagicMock(name="photoshop"), MagicMock(name="illustrator"),
+            MagicMock(), indesign=MagicMock(), affinity=affinity,
+        )
+        return processor._controller_for(ext), processor, affinity
+
+    def test_affinity_engine_sends_psd_to_affinity(self):
+        affinity = MagicMock(name="affinity")
+        controller, processor, _ = self._controller("affinity", ".psd", affinity)
+        assert controller is affinity
+
+    def test_affinity_engine_sends_ai_and_eps_to_affinity(self):
+        affinity = MagicMock(name="affinity")
+        for ext in (".ai", ".eps"):
+            controller, _, _ = self._controller("affinity", ext, affinity)
+            assert controller is affinity, ext
+
+    def test_adobe_engine_keeps_psd_in_photoshop(self):
+        controller, processor, _ = self._controller("adobe", ".psd")
+        assert controller is processor.photoshop
+
+    def test_adobe_engine_keeps_ai_and_eps_in_illustrator(self):
+        for ext in (".ai", ".eps"):
+            controller, processor, _ = self._controller("adobe", ext)
+            assert controller is processor.illustrator, ext
+
+    def test_native_affinity_files_always_use_affinity(self):
+        affinity = MagicMock(name="affinity")
+        for ext in (".afphoto", ".afdesign", ".afpub"):
+            controller, _, _ = self._controller("adobe", ext, affinity)
+            assert controller is affinity, ext
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

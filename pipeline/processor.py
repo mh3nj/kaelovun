@@ -830,13 +830,14 @@ class AssetProcessor:
         return text
 
     def _use_affinity(self, ext: str) -> bool:
-        """Native Affinity files always use Affinity; PSD uses only Photoshop.
-        AI/EPS follow ENGINE since both Affinity and Illustrator support them."""
+        """Native Affinity files always use Affinity. PSD, AI and EPS follow
+        ENGINE: with 'affinity' they open in Affinity instead of Photoshop
+        or Illustrator."""
         if ext in (".afphoto", ".afdesign", ".afpub"):
             return True
-        if ext == ".psd":
-            return False
-        return ext in (".ai", ".eps") and getattr(self.config, "ENGINE", "adobe") == "affinity"
+        if ext in (".psd", ".ai", ".eps"):
+            return getattr(self.config, "ENGINE", "adobe") == "affinity"
+        return False
 
     def _require_affinity(self):
         if not self.affinity:
