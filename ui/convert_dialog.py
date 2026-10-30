@@ -20,8 +20,12 @@ from files.archive import ArchiveManager
 from files.archive_backends import human_size
 from files.archive_prefs import load_prefs
 from pipeline.convert import ArchiveConverter, ConvertOptions
+from ui.settings_dialog import SettingsDialog
 
-TARGET_LABELS = {"zip": "ZIP  (most compatible)", "7z": "7-Zip  (7z, smallest)", "rar": "WinRAR  (RAR5)"}
+TARGET_LABELS = {"zip": "ZIP  (most compatible)",
+                 "7z": "7-Zip  (7z, smallest)",
+                 "rar": "WinRAR  (RAR5)",
+                 "smallest": "Smallest  (build 7z, ZIP and RAR at Best, keep the smallest)"}
 ORIGINAL_LABELS = {"keep": "Keep the original", "recycle": "Move the original to the Recycle Bin"}
 LEVEL_NAMES = {"fast": "Fast", "normal": "Normal", "best": "Best"}
 LEVEL_HINTS = {"fast": "7z -mx1, RAR -m1, ZIP 1",
@@ -93,10 +97,13 @@ class ConvertDialog(tk.Toplevel):
         opts.pack(fill="x", padx=10, pady=4)
         self._opt_row(opts, "Convert to", ttk.Combobox(opts, textvariable=self.target, state="readonly",
                                                        values=list(TARGET_LABELS.values()), width=36))
-        self._opt_row(opts, "Compression", ttk.Combobox(opts, textvariable=self.level, state="readonly",
-                                                        values=list(self.level_labels.values()), width=38))
+        self.level_combo = ttk.Combobox(opts, textvariable=self.level, state="readonly",
+                                        values=list(self.level_labels.values()), width=38)
+        self._opt_row(opts, "Compression", self.level_combo)
         self._opt_row(opts, "Original file", ttk.Combobox(opts, textvariable=self.original, state="readonly",
                                                           values=list(ORIGINAL_LABELS.values()), width=36))
+        self.target.trace_add("write", self._on_target_changed)
+        self._on_target_changed()
         row = tk.Frame(opts)
         row.pack(fill="x", padx=8, pady=2)
         tk.Label(row, text="Save results in", width=14, anchor="w").pack(side="left")
@@ -108,6 +115,10 @@ class ConvertDialog(tk.Toplevel):
         tk.Label(row, text="Password", width=14, anchor="w").pack(side="left")
         tk.Entry(row, textvariable=self.password, show="*", width=22).pack(side="left")
         tk.Label(row, text="only for encrypted archives; the result is NOT encrypted", fg="gray").pack(side="left", padx=6)
+        row = tk.Frame(opts)
+        row.pack(fill="x", padx=8, pady=2)
+        tk.Button(row, text="Archive options...", command=self._open_archive_options).pack(side="left")
+        tk.Label(row, text="same as Settings > Archive; changes apply to conversions too", fg="gray").pack(side="left", padx=6)
         for text, var in (("Only keep a result that is smaller than the original", self.only_smaller),
                           ("Look inside sub-folders", self.recursive),
                           ("Paranoid check (compare CRC32 of every file; slower)", self.paranoid)):
@@ -229,6 +240,23 @@ class ConvertDialog(tk.Toplevel):
         if picked:
             self.output_dir.set(picked)
 
+    def _on_target_changed(self, *_):
+        smallest = self._invert(TARGET_LABELS, self.target.get()) == "smallest"
+        self.level_combo.config(state="disabled" if smallest else "readonly")
+
+    def _open_archive_options(self):
+        SettingsDialog(self, self.config, on_saved=self._on_archive_options_saved,
+                       select_tab="Archive")
+
+    def _on_archive_options_saved(self):
+        default_level = load_prefs(self.config).level
+        old_default = self.level_labels.get("")
+        self.level_labels[""] = f"Settings default ({LEVEL_NAMES.get(default_level, default_level)})"
+        self.level_combo.config(values=list(self.level_labels.values()))
+        if self.level.get() == old_default:
+            self.level.set(self.level_labels[""])
+        self._tool_status()
+
     def _update_count(self):
         self.count_label.config(text=f"{len(self._paths)} item(s)")
 
@@ -266,10 +294,11 @@ class ConvertDialog(tk.Toplevel):
             messagebox.showinfo("Convert Archives", "Add some archives or folders first.", parent=self)
             return
         opts = self._build_options(dry_run)
-        ok, why = ArchiveManager(self.config, self.logger).format_status()[opts.target]
-        if not ok:
-            messagebox.showerror("Convert Archives", why, parent=self)
-            return
+        if opts.target != "smallest":
+            ok, why = ArchiveManager(self.config, self.logger).format_status()[opts.target]
+            if not ok:
+                messagebox.showerror("Convert Archives", why, parent=self)
+                return
         if opts.keep_original == "recycle" and not dry_run:
             if not messagebox.askyesno(
                     "Convert Archives",

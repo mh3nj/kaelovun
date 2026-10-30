@@ -11,9 +11,12 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - A converted archive now inherits the source's previews: `Name.avif` and `Name.thumb.avif` are **copied** (never moved) next to the result, under the result's final name, so Evoury shows the preview right away. The originals stay untouched and nothing existing is ever overwritten.
+- **Convert Archives** has a new **Smallest** target: it builds 7z, RAR and ZIP all at Best compression, keeps whichever comes out smallest (a missing tool is skipped, not an error), and deletes the losers. Still respects "only keep a result that is smaller".
+- "Move the original to the Recycle Bin" now takes the original's `Name.avif` / `Name.thumb.avif` along, but only when nothing left next to the source would pair with them (if the result keeps the same name, the previews stay, since they are now the result's previews).
+- The Convert window has an **Archive options...** button that opens the Settings Archive tab directly. The two share the same stored settings, so a change made in either place applies to both, and the "Settings default" compression entry refreshes right after saving.
 
 ### Changed
-- **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
+- **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR / Smallest) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
 
 ---
 

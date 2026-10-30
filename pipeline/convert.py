@@ -18,7 +18,10 @@ Safety model
 * The result inherits the source's previews: Name.avif and Name.thumb.avif are
   copied (never moved) next to the result, so Evoury pairs them by name.
 * By default a conversion that does not make the file smaller is discarded.
-* "Delete the original" means the Recycle Bin, never a permanent delete.
+* "smallest" as a target builds 7z, RAR and ZIP at Best compression and keeps
+  whichever comes out smallest (a missing tool is skipped, not an error).
+* "Delete the original" means the Recycle Bin, never a permanent delete, and
+  takes the original's previews along if nothing left would pair with them.
 """
 
 import dataclasses
@@ -32,7 +35,7 @@ from typing import Callable, Iterable, List, Optional, Tuple
 
 from files.archive import ArchiveManager
 from files.archive_backends import (
-    ArchiveEntry, Cancelled, PasswordRequired, ToolError, human_size,
+    BACKENDS, ArchiveEntry, Cancelled, PasswordRequired, ToolError, human_size,
 )
 from files.archive_extraction import ArchiveExtractor, ArchiveSecurityError
 from files.archive_prefs import FORMATS, LEVELS, load_prefs
@@ -41,7 +44,7 @@ from files.manifest import ManifestEntry, build_manifest, verify_entries
 from files.workspace import free_gb, make_workspace, remove_tree
 
 PART_MARK = ".kaelovun-part"
-CONVERT_TARGETS = ("7z", "rar", "zip")
+CONVERT_TARGETS = ("7z", "rar", "zip", "smallest")
 
 _RAR_PART = re.compile(r"^(?P<base>.+)\.part0*(?P<num>\d+)\.rar$", re.I)
 _SPLIT = re.compile(r"^(?P<base>.+\.(?:7z|zip|rar))\.(?P<num>\d{3})$", re.I)
@@ -55,8 +58,8 @@ _ARCHIVE_SUFFIXES = (".tar.gz", ".tar.bz2", ".tar.xz", ".tgz", ".tbz2", ".txz",
 
 @dataclass
 class ConvertOptions:
-    target: str = "7z"                      # 7z | rar | zip
-    level: Optional[str] = None             # None = Settings default
+    target: str = "7z"                      # 7z | rar | zip | smallest
+    level: Optional[str] = None             # None = Settings default; "smallest" always uses Best
     keep_original: str = "keep"             # keep | recycle
     output_dir: Optional[Path] = None       # None = next to the source
     only_if_smaller: bool = True
@@ -263,10 +266,9 @@ class ArchiveConverter:
             result.status, result.reason = "failed", str(exc)
         finally:
             # Whatever happened, leave nothing behind but a finished, verified result.
-            partial = scratch.get("partial")
-            if partial and Path(partial).exists():
+            for partial in scratch.get("partials", []):
                 try:
-                    Path(partial).unlink()
+                    Path(partial).unlink(missing_ok=True)
                 except OSError:
                     pass
             remove_tree(scratch.get("workspace"))
@@ -305,14 +307,21 @@ class ArchiveConverter:
         result.volumes = volumes
         result.src_bytes = sum(v.stat().st_size for v in volumes)
 
-        backend_ok, why = self.archive.format_status()[target]
-        if not backend_ok:
-            raise ToolError(why)
+        status = self.archive.format_status()
+        if target == "smallest":
+            candidates = [fmt for fmt in ("7z", "rar", "zip") if status[fmt][0]]
+            for fmt in ("7z", "rar", "zip"):
+                if not status[fmt][0]:
+                    self.logger.warning(f"Smallest mode: skipping {fmt.upper()} ({status[fmt][1]})")
+            prefs = dataclasses.replace(prefs, level="best")
+        else:
+            ok, why = status[target]
+            if not ok:
+                raise ToolError(why)
+            candidates = [target]
 
         out_dir = Path(opts.output_dir) if opts.output_dir else source.parent
         stem = self.filename.normalize(archive_stem(source)) or "archive"
-        ext = "." + target
-        final = self.filename.unique_path(out_dir, stem, ext)
 
         self.extractor.cancel = cancel
         self.extractor.password = opts.password
@@ -325,8 +334,12 @@ class ArchiveConverter:
 
         if opts.dry_run:
             result.status = "dry-run"
+            if target == "smallest":
+                goal = "the smallest of 7z, RAR and ZIP"
+            else:
+                goal = self.filename.unique_path(out_dir, stem, "." + target).name
             result.reason = (f"{report.file_count} file(s), {human_size(report.total_bytes)} unpacked "
-                             f"-> {final.name}")
+                             f"-> {goal}")
             return
 
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -358,37 +371,52 @@ class ArchiveConverter:
         if not check.ok:
             raise ToolError(f"extraction does not match the source archive ({check.describe()})")
 
-        # 4. Build the new archive under a temporary name
+        # 4. Build every candidate under a temporary name
         partial_base = out_dir / f"{stem}{PART_MARK}"
-        scratch["partial"] = partial_base.with_name(partial_base.name + ext)
-        self._say(progress, "compressing", 0.0)
-        partial = self.archive.create_tree(
-            content, partial_base, fmt=target, cancel=cancel, prefs=prefs,
-            progress=(lambda pct: self._say(progress, "compressing", pct)) if progress else None)
-        scratch["partial"] = partial
+        scratch["partials"] = []
+        built: List[Tuple[int, Path, str]] = []
+        for fmt in candidates:
+            self._say(progress, f"compressing ({fmt})", 0.0)
+            # Register the expected path first so a crash inside the backend
+            # still leaves nothing behind.
+            scratch["partials"].append(partial_base.with_name(partial_base.name + BACKENDS[fmt].ext))
+            partial = self.archive.create_tree(
+                content, partial_base, fmt=fmt, cancel=cancel, prefs=prefs,
+                progress=(lambda pct, f=fmt: self._say(progress, f"compressing ({f})", pct))
+                if progress else None)
+            scratch["partials"][-1] = partial
 
-        # 5. Verify it
-        self._say(progress, "verifying", None)
-        if prefs.test and not self.archive.test_archive(partial, cancel=cancel):
-            raise ToolError("the new archive failed its integrity test")
-        listing = self.archive.list_entries(partial, cancel=cancel)
-        check = verify_entries(extracted, listing, check_crc=paranoid)
-        if not check.ok:
-            raise ToolError(f"the new archive does not match its contents ({check.describe()})")
+            # 5. Verify it
+            self._say(progress, "verifying", None)
+            if prefs.test and not self.archive.test_archive(partial, cancel=cancel):
+                raise ToolError(f"the new {fmt} archive failed its integrity test")
+            listing = self.archive.list_entries(partial, cancel=cancel)
+            check = verify_entries(extracted, listing, check_crc=paranoid)
+            if not check.ok:
+                raise ToolError(f"the new {fmt} archive does not match its contents ({check.describe()})")
+            built.append((partial.stat().st_size, partial, fmt))
 
-        result.out_bytes = partial.stat().st_size
+        out_bytes, partial, winner = min(built, key=lambda item: item[0])
+        result.out_bytes = out_bytes
 
         # 6. Worth keeping?
         if opts.only_if_smaller and result.out_bytes >= result.src_bytes:
             result.status = "skipped"
-            result.reason = (f"{target} would not be smaller ({human_size(result.out_bytes)} vs "
-                             f"{human_size(result.src_bytes)}); original left alone")
+            if target == "smallest":
+                result.reason = (f"even the smallest result ({winner}) would not be smaller "
+                                 f"({human_size(result.out_bytes)} vs {human_size(result.src_bytes)}); "
+                                 f"original left alone")
+            else:
+                result.reason = (f"{winner} would not be smaller ({human_size(result.out_bytes)} vs "
+                                 f"{human_size(result.src_bytes)}); original left alone")
             return
 
         # 7. Publish atomically, never over anything that exists.
-        final = self.filename.unique_path(out_dir, stem, ext)
+        final = self.filename.unique_path(out_dir, stem, "." + winner)
         os.replace(partial, final)
-        scratch["partial"] = None
+        scratch["partials"].remove(partial)
+        if target == "smallest" and len(candidates) > 1:
+            self.logger.info(f"Smallest mode: kept {winner} ({human_size(out_bytes)})")
         if opts.preserve_mtime:
             try:
                 st = source.stat()
@@ -403,7 +431,8 @@ class ArchiveConverter:
 
         # 9. Optionally recycle the original (only after everything above passed)
         if opts.keep_original == "recycle":
-            result.original_removed = self._recycle(volumes)
+            result.original_removed = self._recycle(
+                volumes + self._orphan_sidecars(source, volumes, stem))
 
     def _copy_preview_sidecars(self, source: Path, out_dir: Path, final: Path) -> None:
         """Copy Name.avif and Name.thumb.avif next to the converted archive.
@@ -424,6 +453,25 @@ class ArchiveConverter:
                 shutil.copy2(origin, target)
             except OSError as exc:
                 self.logger.warning(f"Could not copy the preview {origin.name}: {exc}")
+
+    def _orphan_sidecars(self, source: Path, volumes: List[Path], stem: str) -> List[Path]:
+        """The original's previews, if nothing left next to the source would pair with them.
+
+        Evoury pairs an archive with <stem>.avif by name, so the previews only
+        become orphans once every archive with the same stem is gone.
+        """
+        raw = archive_stem(source)
+        sidecars = [source.with_name(raw + suffix) for suffix in (".avif", ".thumb.avif")]
+        sidecars = [p for p in sidecars if p.is_file()]
+        if not sidecars:
+            return []
+        gone = set(volumes)
+        for other in source.parent.iterdir():
+            if not other.is_file() or other in gone:
+                continue
+            if is_convertible(other) and self.filename.normalize(archive_stem(other)) == stem:
+                return []
+        return sidecars
 
     def _recycle(self, paths: List[Path]) -> bool:
         try:

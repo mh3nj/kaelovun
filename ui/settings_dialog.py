@@ -12,6 +12,7 @@ no config.py editing, no rebuild. Empty path fields mean auto-detect.
 import tkinter as tk
 from tkinter import ttk, filedialog
 from pathlib import Path
+from typing import Optional
 
 from files.app_settings import AppSettings
 from ui.archive_settings import build_archive_tab, collect_archive_values
@@ -50,7 +51,7 @@ NAMING_MODES = ["manual", "automation"]
 
 class SettingsDialog(tk.Toplevel):
 
-    def __init__(self, parent, config, on_saved=None):
+    def __init__(self, parent, config, on_saved=None, select_tab: Optional[str] = None):
         super().__init__(parent)
         self.config = config
         self.on_saved = on_saved
@@ -74,6 +75,11 @@ class SettingsDialog(tk.Toplevel):
             for e in FORMAT_FIELDS}
 
         self._build()
+        if select_tab:
+            for tab_id in self.tabs.tabs():
+                if self.tabs.tab(tab_id, "text") == select_tab:
+                    self.tabs.select(tab_id)
+                    break
         self._refresh_mcp_status()
 
     # ── current values ──
@@ -91,7 +97,7 @@ class SettingsDialog(tk.Toplevel):
     # ── layout ──
 
     def _build(self):
-        tabs = ttk.Notebook(self)
+        self.tabs = tabs = ttk.Notebook(self)
         tabs.pack(fill="both", expand=True, padx=10, pady=10)
         self._build_engine(tabs)
         self._build_apps(tabs)

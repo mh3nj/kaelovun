@@ -208,6 +208,63 @@ def test_recycle_removes_original_only_after_success(conv, tmp_path):
     assert r2.status == "failed" and trashed == []
 
 
+def test_recycle_takes_orphan_previews_with_the_original(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    (tmp_path / "pack.avif").write_bytes(b"PREVIEW")
+    (tmp_path / "pack.thumb.avif").write_bytes(b"THUMB")
+    out = tmp_path / "out"
+    out.mkdir()
+    trashed = []
+    fake = type(sys)("send2trash")
+    fake.send2trash = trashed.append
+    with patch.dict(sys.modules, {"send2trash": fake}):
+        r = c.convert(src, ConvertOptions(target="7z", output_dir=out, keep_original="recycle"))
+    assert r.status == "converted" and r.original_removed
+    assert trashed == [str(src), str(tmp_path / "pack.avif"), str(tmp_path / "pack.thumb.avif")]
+    # the result got its own copies before the originals were recycled
+    assert (out / "pack.avif").read_bytes() == b"PREVIEW"
+    assert (out / "pack.thumb.avif").read_bytes() == b"THUMB"
+
+
+def test_recycle_keeps_previews_that_still_pair_with_the_result(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    (tmp_path / "pack.avif").write_bytes(b"PREVIEW")
+    (tmp_path / "pack.thumb.avif").write_bytes(b"THUMB")
+    trashed = []
+    fake = type(sys)("send2trash")
+    fake.send2trash = trashed.append
+    with patch.dict(sys.modules, {"send2trash": fake}):
+        r = c.convert(src, ConvertOptions(target="7z", keep_original="recycle"))
+    assert r.status == "converted" and r.original_removed
+    assert trashed == [str(src)]  # pack.7z still pairs with the previews
+    assert (tmp_path / "pack.avif").read_bytes() == b"PREVIEW"
+    assert (tmp_path / "pack.thumb.avif").read_bytes() == b"THUMB"
+
+
+def test_smallest_builds_all_available_formats_and_keeps_the_winner(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    before = src.read_bytes()
+    r = c.convert(src, ConvertOptions(target="smallest"))
+    assert r.status == "converted", r.reason
+    assert r.output.suffix.lstrip(".") in ("7z", "rar", "zip")
+    assert src.read_bytes() == before
+    assert r.out_bytes < r.src_bytes
+    assert not [p.name for p in tmp_path.iterdir() if ".kaelovun-part" in p.name]
+
+
+def test_smallest_skips_when_nothing_would_be_smaller(conv, tmp_path):
+    c, _ = conv
+    src = tmp_path / "tiny.zip"
+    with zipfile.ZipFile(src, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("a.txt", "x")
+    r = c.convert(src, ConvertOptions(target="smallest"))
+    assert r.status == "skipped" and "smaller" in r.reason
+    assert sorted(p.name for p in tmp_path.iterdir() if p.name != "ws") == ["tiny.zip"]
+
+
 def test_mtime_is_carried_over(conv, tmp_path):
     import os
     c, _ = conv
