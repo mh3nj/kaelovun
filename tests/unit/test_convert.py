@@ -58,6 +58,45 @@ def test_never_overwrites_an_existing_file(conv, tmp_path):
     assert (tmp_path / "pack.7z").read_bytes() == b"precious"
 
 
+def test_preview_sidecars_are_copied_next_to_the_result(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    (tmp_path / "pack.avif").write_bytes(b"PREVIEW")
+    (tmp_path / "pack.thumb.avif").write_bytes(b"THUMB")
+    out = tmp_path / "out"
+    out.mkdir()
+    r = c.convert(src, ConvertOptions(target="7z", output_dir=out))
+    assert r.status == "converted"
+    assert r.output == out / "pack.7z"
+    assert (out / "pack.avif").read_bytes() == b"PREVIEW"
+    assert (out / "pack.thumb.avif").read_bytes() == b"THUMB"
+    assert (tmp_path / "pack.avif").read_bytes() == b"PREVIEW"
+
+
+def test_preview_sidecars_follow_the_unique_result_name(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    (tmp_path / "pack.7z").write_bytes(b"precious")
+    (tmp_path / "pack.avif").write_bytes(b"OLD-PREVIEW")
+    (tmp_path / "pack.thumb.avif").write_bytes(b"OLD-THUMB")
+    r = c.convert(src, ConvertOptions(target="7z"))
+    assert r.output.name == "pack (2).7z"
+    assert (tmp_path / "pack (2).avif").read_bytes() == b"OLD-PREVIEW"
+    assert (tmp_path / "pack (2).thumb.avif").read_bytes() == b"OLD-THUMB"
+    assert (tmp_path / "pack.avif").read_bytes() == b"OLD-PREVIEW"
+
+
+def test_preview_sidecar_copy_never_overwrites(conv, tmp_path):
+    c, _ = conv
+    src = build_zip(tmp_path / "pack.zip")
+    (tmp_path / "pack.avif").write_bytes(b"SOURCE-PREVIEW")
+    (tmp_path / "pack.7z").write_bytes(b"precious")
+    (tmp_path / "pack (2).avif").write_bytes(b"KEEP-ME")
+    r = c.convert(src, ConvertOptions(target="7z"))
+    assert r.output.name == "pack (2).7z"
+    assert (tmp_path / "pack (2).avif").read_bytes() == b"KEEP-ME"
+
+
 def test_same_format_never_targets_the_source_itself(conv, tmp_path):
     c, _ = conv
     src = build_zip(tmp_path / "pack.zip")

@@ -9,6 +9,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## Unreleased
 
+### Added
+- A converted archive now inherits the source's previews: `Name.avif` and `Name.thumb.avif` are **copied** (never moved) next to the result, under the result's final name, so Evoury shows the preview right away. The originals stay untouched and nothing existing is ever overwritten.
+
 ### Changed
 - **Convert Archives** now spells out its targets (ZIP / 7-Zip / WinRAR) and every compression level shows the exact flags it maps to (7z `-mx`, RAR `-m`, ZIP level), instead of vague "Fast / Normal / Best" labels. The Settings dialog shows the same details. The "Settings default" entry names the level it resolves to, so it is never a mystery.
 

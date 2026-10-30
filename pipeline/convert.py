@@ -15,6 +15,8 @@ Safety model
     3. content check      - every file present with the right size (+CRC32 if paranoid)
 * Only ONE archive layer is unpacked. Archives nested inside are copied untouched.
 * The result never overwrites anything: an existing name gets " (2)", " (3)", ...
+* The result inherits the source's previews: Name.avif and Name.thumb.avif are
+  copied (never moved) next to the result, so Evoury pairs them by name.
 * By default a conversion that does not make the file smaller is discarded.
 * "Delete the original" means the Recycle Bin, never a permanent delete.
 """
@@ -22,6 +24,7 @@ Safety model
 import dataclasses
 import os
 import re
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -395,9 +398,32 @@ class ArchiveConverter:
         result.output = final
         result.status = "converted"
 
-        # 8. Optionally recycle the original (only after everything above passed)
+        # 8. Give the result the previews the source had (copy, never move)
+        self._copy_preview_sidecars(source, out_dir, final)
+
+        # 9. Optionally recycle the original (only after everything above passed)
         if opts.keep_original == "recycle":
             result.original_removed = self._recycle(volumes)
+
+    def _copy_preview_sidecars(self, source: Path, out_dir: Path, final: Path) -> None:
+        """Copy Name.avif and Name.thumb.avif next to the converted archive.
+
+        Evoury pairs an archive with its previews by name, so the copies take
+        the result's final name. The originals stay untouched and nothing
+        existing is ever overwritten.
+        """
+        stem = archive_stem(source)
+        for suffix in (".avif", ".thumb.avif"):
+            origin = source.with_name(stem + suffix)
+            if not origin.is_file():
+                continue
+            target = out_dir / (final.stem + suffix)
+            if target.exists():
+                continue
+            try:
+                shutil.copy2(origin, target)
+            except OSError as exc:
+                self.logger.warning(f"Could not copy the preview {origin.name}: {exc}")
 
     def _recycle(self, paths: List[Path]) -> bool:
         try:
